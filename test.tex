@@ -1,0 +1,14 @@
+
+
+\simpleCommand
+\commandWithText{bar}
+\commandOneArgument[a=b]{bar}
+\commandOneQuotedArgument[a="b, c, d, \"fish\""]{bar}
+\commandOneArgWithSpaces[a= b  c]{bar}
+\commandTwoArguments[a= b  c , d=123]{bar}
+text between
+\commandTwoArgumentsNonASCII[a= 😁, d=12🇬🇧3]{bar\baz}
+\commandEscapedBrace{ba\}r}
+\commandEscapedSlash{ba\\r}
+
+\nestedCommandOuter{text before\nestedCommandInner text after}
