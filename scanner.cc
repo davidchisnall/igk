@@ -4,6 +4,7 @@
 
 #include <bit>
 #include <cassert>
+#include <filesystem>
 #include <fmt/color.h>
 #include <fstream>
 #include <iostream>
@@ -76,7 +77,7 @@ struct DebugTokenHandler : public TokenHandler
 
 	void command_start(SourceRange range, std::string command)
 	{
-		std::cout << "start command: " << command << std::endl;
+		std::cerr << "start command: " << command << std::endl;
 		sourceManager.report_error(range.first,
 		                           range.second,
 		                           "start command",
@@ -85,7 +86,7 @@ struct DebugTokenHandler : public TokenHandler
 
 	void command_end(SourceRange)
 	{
-		std::cout << "end command" << std::endl;
+		std::cerr << "end command" << std::endl;
 	}
 
 	void
@@ -95,13 +96,13 @@ struct DebugTokenHandler : public TokenHandler
 		                           range.second,
 		                           "argument",
 		                           SourceManager::Severity::Error);
-		std::cout << "argument: " << argument << " value: " << value
+		std::cerr << "argument: " << argument << " value: " << value
 		          << std::endl;
 	}
 
 	void text(SourceRange, std::string text)
 	{
-		std::cout << "text: " << text << std::endl;
+		std::cerr << "text: " << text << std::endl;
 	}
 };
 
@@ -532,21 +533,21 @@ class TeXOutputPass : public OutputPass
 			  {
 				  if (!child->kind.empty())
 				  {
-					  std::cout << '\\' << child->kind;
+					  out() << '\\' << child->kind;
 				  }
 				  if (!child->attributes().empty())
 				  {
-					  std::cout << '[';
+					  out() << '[';
 					  bool first = true;
 					  for (auto &attr : child->attributes())
 					  {
 						  if (!first)
 						  {
-							  std::cout << ',';
+							  out() << ',';
 						  }
 						  if (attr.first.empty())
 						  {
-							  std::cout << attr.second;
+							  out() << attr.second;
 						  }
 						  else
 						  {
@@ -564,27 +565,27 @@ class TeXOutputPass : public OutputPass
 										  pos++;
 									  }
 								  }
-								  std::cout << attr.first << "=\"" << escaped
-								            << '"';
+								  out()
+								    << attr.first << "=\"" << escaped << '"';
 							  }
 							  else
 							  {
-								  std::cout << attr.first << '=' << attr.second;
+								  out() << attr.first << '=' << attr.second;
 							  }
 						  }
 						  first = false;
 					  }
-					  std::cout << ']';
+					  out() << ']';
 				  }
 				  if (!(child->kind.empty() && child->attributes().empty()))
 				  {
-					  std::cout << '{';
+					  out() << '{';
 				  }
 				  child->const_visit(
 				    [this](auto node) { return visitor(node); });
 				  if (!(child->kind.empty() && child->attributes().empty()))
 				  {
-					  std::cout << '}';
+					  out() << '}';
 				  }
 			  }
 			  else
@@ -600,11 +601,11 @@ class TeXOutputPass : public OutputPass
 							  pos++;
 						  }
 					  }
-					  std::cout << escaped;
+					  out() << escaped;
 				  }
 				  else
 				  {
-					  std::cout << child;
+					  out() << child;
 				  }
 			  }
 		  },
@@ -630,7 +631,9 @@ class TeXOutputPass : public OutputPass
 
 void TextTree::dump()
 {
-	TeXOutputPass().process(shared_from_this());
+	TeXOutputPass out;
+	out.output_stderr();
+	out.process(shared_from_this());
 }
 
 template<bool XMLTags>
@@ -772,6 +775,29 @@ class LuaPass : public TextPass
 		  },
 		  "dump",
 		  &TextTree::dump,
+		  "source_file_name",
+		  [](TextTree &textTree) {
+			  auto sm = SourceManager::shared_instance();
+			  return sm.file_for_id(
+			    sm.expand(textTree.sourceRange.first).fileID);
+		  },
+		  "source_directory_name",
+		  [](TextTree &textTree) {
+			  std::cerr << "source_directory_name" << std::endl;
+			  auto sm = SourceManager::shared_instance();
+			  std::cerr << "Source range: "
+			            << sm.expand(textTree.sourceRange.first).fileID
+			            << std::endl;
+			  auto &file =
+			    sm.file_for_id(sm.expand(textTree.sourceRange.first).fileID);
+			  std::filesystem::path path = file;
+			  std::cerr << "Path: " << path << std::endl;
+			  if (path.has_parent_path())
+			  {
+				  return path.parent_path().string();
+			  }
+			  return std::filesystem::current_path().string();
+		  },
 		  "shallow_clone",
 		  &TextTree::shallow_clone,
 		  "find_string",
@@ -807,6 +833,16 @@ class LuaPass : public TextPass
 		{
 			plugin(lua);
 		}
+		// Redirect stdout to stderr
+		lua.script("print = function(...)\n"
+		           "for i,arg in ipairs({...}) do\n"
+		           "if i > 1 then\n"
+		           "io.stderr:write('\\t')\n"
+		           "end\n"
+		           "io.stderr:write(tostring(arg))\n"
+		           "end\n"
+		           "io.stderr:write('\\n')\n"
+		           "end\n");
 		return processFunction(tree);
 	}
 

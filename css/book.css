@@ -1,0 +1,79 @@
+
+pre.listing-code-numbered > code.listing-line:before {
+	content: counter(listing-line, decimal) " ";
+	-webkit-user-select: none; /* Safari */
+	user-select: none;
+	float: left;
+	text-align: right;
+	width: 3em;
+	background-color: #ffffff;
+	border-right: 1px solid #000000;
+	margin-right: 0.5em;
+}
+
+pre.listing-code {
+	background-color: #f0f0f0;
+}
+
+code.listing-line {
+	counter-increment: listing-line
+}
+
+p.listing-caption {
+	font-size: 0.8em;
+	text-align: center;
+}
+
+div.listing {
+  display: block;
+  width=80em;
+  margin-left: auto;
+  margin-right: auto;
+
+}
+
+span.listing-origin:before {
+  content: " [ from ";
+}
+span.listing-origin:after {
+  content: " ]";
+}
+
+span.code
+{
+	font: SourceCodePro;
+	font-family: monospace;
+}
+span.code-Declaration { color: #0000FF; }
+span.code-Declaration { color: #0000FF; }
+span.code-Punctuation { color: #000000; }
+span.code-TypeRef { color: #0000FF; }
+span.code-DeclRef { color: #00a000; }
+span.code-FunctionName { color: #00a000; }
+span.code-ParamName { color: #00a000; }
+span.code-Literal { color: #a00000; }
+span.code-Keyword { color: #ff0000; }
+span.code-Comment { color: #008000; }
+
+
+div.code-documentation {
+  margin-top: 1em;
+  margin-bottom: 1em;
+  border: 2px solid black;
+  border-top: 3px solid black;
+}
+
+
+div.code-documentation-inner {
+  padding: 0 1em;
+  margin-top: -0.8em;
+}
+
+div.code-documentation-inner > span.code-documentation-heading {
+  background: white none repeat scroll 0 0;
+  padding: 0 2px;
+  margin-left: 2em;
+  font-weight: 700;
+  font-size: 18px;
+}
+

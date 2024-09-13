@@ -1,0 +1,25 @@
+\code[label=lst:example,filename=includes/test.cc,caption=Example of a thing,first-line=12,code-kind=listing]{\code-run[token-kind=Declaration]{static int} \code-run[token-kind=Declaration]{y}\code-run[token-kind=Punctuation]{;}
+
+\code-run[token-kind=Declaration]{class} \code-run[token-kind=Declaration]{Foo} \code-run[token-kind=Punctuation]{{\}}\code-run[token-kind=Punctuation]{;}
+
+\code-run[token-kind=Declaration]{namespace} \code-run[token-kind=Declaration]{NamespaceX} \code-run[token-kind=Punctuation]{{}
+  \code-run[token-kind=Declaration]{class} \code-run[token-kind=Declaration]{Bar} \code-run[token-kind=Punctuation]{{\}}\code-run[token-kind=Punctuation]{;
+\}}
+
+\code-run[token-kind=Declaration]{__attribute__}\code-run[token-kind=Punctuation]{((}\code-run[token-kind=Declaration]{cheri_libcall}\code-run[token-kind=Punctuation]{))}
+\code-run[token-kind=Declaration]{void} \code-run[token-kind=Declaration]{libcall}\code-run[token-kind=Punctuation]{()}\code-run[token-kind=Punctuation]{;}
+
+\code-run[token-kind=Comment]{/**
+ * This is the `main` function!  Yes it is!
+ *
+ * MAAAAAIIIIN!
+ *
+ *  - Is it?
+ *  - Yes, it is!
+ *  - It takes `argc` and `argv` as arguments.
+ */}
+\code-run[token-kind=Declaration]{int} \code-run[token-kind=Declaration]{main}\code-run[token-kind=Punctuation]{(}\code-run[token-kind=Declaration]{int} \code-run[token-kind=Declaration]{argc}\code-run[token-kind=Punctuation]{,} \code-run[token-kind=Declaration]{char} \code-run[token-kind=Punctuation]{**}\code-run[token-kind=Declaration]{argv}\code-run[token-kind=Punctuation]{)} \code-run[token-kind=Punctuation]{{}
+	\code-run[token-kind=Comment]{// Comment}
+  \code-run[token-kind=TypeRef]{std}\code-run[token-kind=Punctuation]{::}\code-run[token-kind=DeclRef]{cout} \code-run[token-kind=Punctuation]{<<} \code-run[token-kind=Literal]{"Hello, World!"} \code-run[token-kind=Punctuation]{<<} \code-run[token-kind=TypeRef]{std}\code-run[token-kind=Punctuation]{::}\code-run[token-kind=DeclRef]{endl}\code-run[token-kind=Punctuation]{;}
+  \code-run[token-kind=Keyword]{return} \code-run[token-kind=Literal]{0}\code-run[token-kind=Punctuation]{;
+\}}}

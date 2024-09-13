@@ -38,3 +38,5 @@ target_link_options(igk-clang PRIVATE LINKER:-undefined,dynamic_lookup)
 
 target_link_libraries(igk PRIVATE ICU::uc fmt::fmt ${LUA_LIBRARIES} CLI11::CLI11)
 
+enable_testing()
+add_subdirectory(Tests)

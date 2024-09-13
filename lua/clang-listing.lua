@@ -1,10 +1,21 @@
 
+-- FIXME: Don't hard code these paths.
 local arguments = {
 	"c++",
 	"-std=c++17",
 	"-I/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/c++/v1",
 	"-I/Library/Developer/CommandLineTools/usr/lib/clang/15.0.0/include",
 	"-I/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include"};
+
+
+local parsedFiles = {}
+
+function parse_file(fileName)
+	if parsedFiles[fileName] == nil then
+		parsedFiles[fileName] = ClangTextBuilder.new(fileName, arguments)
+	end
+	return parsedFiles[fileName]
+end
 
 
 function file_exists(file)
@@ -49,13 +60,22 @@ function check_attribute(textTree, attribute)
 	return true
 end
 
+function resolve_relative_path(textTree, path)
+	if (path:find("/", 1, true) ~= 1) then
+		local dirname = textTree:source_directory_name()
+		path = dirname .. "/" .. path
+	end
+	return path
+end
+
 function handleCodeListing(textTree)
 		if not (check_attribute(textTree, "filename") and 
 			check_attribute(textTree, "marker") and 
 			check_attribute(textTree, "caption")) then
 			return {textTree}
 		end
-		local fileName = textTree:attribute("filename")
+		local fileName = resolve_relative_path(textTree, textTree:attribute("filename"))
+
 		local clang = ClangTextBuilder.new(fileName, arguments)
 		local lineRange = lines_from(textTree, fileName, textTree:attribute("marker"))
 		if not lineRange then
@@ -133,18 +153,28 @@ function cleanMarkdown(textTree)
 	return {textTree}
 end
 
+local docfile = nil
+
 function visit(textTree)
 	if not (type(textTree) == "string") then
 		if (textTree.kind == "codelisting") then
 			return handleCodeListing(textTree)
 		end
-		if (textTree.kind == "functiondoc") or (textTree.kind == "macrodoc") then
+		if textTree.kind == 'docfile' then
+			docfile = resolve_relative_path(textTree, textTree.children[1])
+			print("Using docfile: ", docfile)
+			return {}
+		elseif (textTree.kind == "functiondoc") or (textTree.kind == "macrodoc") then
 			local DocumentedKinds = {
 				"functiondoc", "Function",
 				"macrodoc", "Macro"
 			}
 			-- FIXME: Memoise.
-			local clang = ClangTextBuilder.new('test.cc', arguments)
+			if not docfile then
+				textTree:error("Clang documentation directives must be preceded by a \\docfile{} instruction giving the source file to parse")
+				return {textTree}
+			end
+			local clang = ClangTextBuilder.new(docfile, arguments)
 			local usr = textTree:attribute("usr")
 			if isempty(usr) then
 				local USRs

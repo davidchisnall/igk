@@ -22,20 +22,42 @@ struct TextPass
 struct OutputPass : public TextPass
 {
 	std::unique_ptr<std::fstream> file;
+	enum OutputType {
+		StdOut,
+		StdErr,
+		File
+	} output_type = StdOut;
 
 	std::ostream &out()
 	{
-		if (file)
+		switch (output_type)
 		{
-			return *file;
+			case StdOut:
+				return std::cout;
+			case StdErr:
+				return std::cerr;
+			case File:
+				return *file;
 		}
-		return std::cout;
 	}
 
-	virtual void set_file(std::string filename)
+	void output_stdout()
+	{
+		file.reset();
+		output_type = StdOut;
+	}
+
+	void output_stderr()
+	{
+		file.reset();
+		output_type = StdErr;
+	}
+
+	void output_file(std::string filename)
 	{
 		file = std::make_unique<std::fstream>(
 		  filename, std::ios::out | std::ios::binary | std::ios::trunc);
+		output_type = File;
 	}
 };
 

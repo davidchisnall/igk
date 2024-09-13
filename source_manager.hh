@@ -197,6 +197,15 @@ class SourceManager
 		return CompressedSourceLocation(*this, fileNumber, line, offset);
 	}
 
+	const std::string_view file_for_id(size_t id)
+	{
+		if (id == std::numeric_limits<size_t>::max())
+		{
+			return "<unknown>";
+		}
+		return fileNames.at(id).first;
+	}
+
 	SourceLocation expand(CompressedSourceLocation &loc)
 	{
 		return loc.expand(*this);
@@ -221,7 +230,7 @@ class SourceManager
 		}
 		if (!start.is_valid())
 		{
-			fmt::print("Unknown source location {}:\n{}\n",
+			fmt::print(stderr, "Unknown source location {}:\n{}\n",
 			           fmt::styled(isError ? "Error" : "Warning",
 			                       isError
 			                         ? fmt::fg(fmt::terminal_color::red)
@@ -288,7 +297,7 @@ class SourceManager
 		  std::max<size_t>(1, characters(startIter, endIter));
 		size_t charsAfter = characters(endIter, lineEndIter);
 		// Print the message!
-		fmt::print("{}:{}:{}: {}: {}:\n{}\n{}{}{}{}\n",
+		fmt::print(stderr, "{}:{}:{}: {}: {}:\n{}\n{}{}{}{}\n",
 		           fileName,
 		           startLoc.line,
 		           charsBefore,

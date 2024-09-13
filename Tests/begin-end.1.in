@@ -1,0 +1,8 @@
+\begin{itemize}
+	\item{Item 1}
+		\begin{item}
+			\enumerate{
+			\item{Item 2a}\item{Item 2b}
+			}
+		\end{item}
+\end{itemize}
