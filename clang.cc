@@ -4,6 +4,7 @@
 #include <clang-c/Index.h>
 #include <filesystem>
 #include <fstream>
+#include <regex>
 #include <string_view>
 #include <unordered_set>
 #include <vector>
@@ -43,21 +44,6 @@ namespace
 
 		CXTranslationUnit translationUnit;
 
-		CXChildVisitResult visit(CXCursor cursor, CXCursor parent)
-		{
-			if (CXCursor_FunctionDecl == (cursor.kind))
-			{
-				std::cerr
-				  << "Cursor USR: "
-				  << std::string_view(String(clang_getCursorUSR(cursor)))
-				  << " Spelling: "
-				  << std::string_view(String(clang_getCursorSpelling(cursor)))
-				  << std::endl;
-			}
-
-			return CXChildVisit_Recurse;
-		}
-
 		public:
 		ClangTextBuilder() = delete;
 
@@ -79,15 +65,15 @@ namespace
 			  CXTranslationUnit_DetailedPreprocessingRecord);
 		}
 
-		std::vector<std::string>
-		usrs_for_function(const std::string &functionName)
+		std::vector<std::string> usrs_for_entity(const std::string &name,
+		                                         CXCursorKind       entityKind)
 		{
 			std::unordered_set<std::string> usrs;
 			auto visit = [&](CXCursor cursor, CXCursor parent) {
-				if (CXCursor_FunctionDecl == cursor.kind)
+				if (entityKind == cursor.kind)
 				{
 					String spelling = String(clang_getCursorSpelling(cursor));
-					if (functionName == std::string_view{spelling})
+					if (name == std::string_view{spelling})
 					{
 						usrs.insert(String(clang_getCursorUSR(cursor)));
 					}
@@ -102,6 +88,34 @@ namespace
 			  },
 			  &visit);
 			return std::vector<std::string>{usrs.begin(), usrs.end()};
+		}
+
+		std::vector<std::string>
+		usrs_for_function(const std::string &functionName)
+		{
+			return usrs_for_entity(functionName, CXCursor_FunctionDecl);
+		}
+
+		std::vector<std::string> usrs_for_macro(const std::string &macroName)
+		{
+			return usrs_for_entity(macroName, CXCursor_MacroDefinition);
+		}
+
+		const char *token_kind(CXToken token)
+		{
+			switch (clang_getTokenKind(token))
+			{
+				case CXToken_Comment:
+					return "Comment";
+				case CXToken_Identifier:
+					return "Identifier";
+				case CXToken_Punctuation:
+					return "Punctuation";
+				case CXToken_Keyword:
+					return "Keyword";
+				case CXToken_Literal:
+					return "Literal";
+			}
 		}
 
 		TextTreePointer build_line_range(std::string fileName,
@@ -153,11 +167,13 @@ namespace
 			cursors.resize(tokenCount);
 			auto tree  = TextTree::create();
 			tree->kind = "code";
+			tree->attribute_set("code-kind", "listing");
 			clang_annotateTokens(
 			  translationUnit, tokens, tokenCount, cursors.data());
 			CXCursor        last      = clang_getNullCursor();
 			auto            tokenTree = TextTree::create();
 			TextTreePointer currentToken;
+			CXTokenKind     lastKind = CXTokenKind(-1);
 			for (unsigned i = 0; i < tokenCount; i++)
 			{
 				CXToken       token  = tokens[i];
@@ -182,7 +198,8 @@ namespace
 					break;
 				}
 				// If two tokens are part of the same cursor, combine them.
-				if (clang_equalCursors(cursor, last))
+				if (clang_equalCursors(cursor, last) &&
+				    (lastKind == clang_getTokenKind(token)))
 				{
 					if (endOffset > lastOffset)
 					{
@@ -193,7 +210,8 @@ namespace
 					lastOffset = endOffset;
 					continue;
 				}
-				last = cursor;
+				last     = cursor;
+				lastKind = clang_getTokenKind(token);
 				if (startOffset > lastOffset)
 				{
 					tree->append_text(text.substr(lastOffset - start,
@@ -233,25 +251,12 @@ namespace
 					default:
 						// If we don't have a kind for the cursor, fall back to
 						// the token.
-						switch (clang_getTokenKind(token))
-						{
-							case CXToken_Comment:
-								tokenKind = "Comment";
-								break;
-							case CXToken_Identifier:
-								tokenKind = "Identifier";
-								break;
-							case CXToken_Punctuation:
-								tokenKind = "Punctuation";
-								break;
-							case CXToken_Keyword:
-								tokenKind = "Keyword";
-								break;
-							case CXToken_Literal:
-								tokenKind = "Literal";
-								break;
-						}
+						tokenKind = token_kind(token);
 						break;
+				}
+				if (clang_getTokenKind(token) == CXToken_Punctuation)
+				{
+					tokenKind = "Punctuation";
 				}
 				currentToken->kind = "code-run";
 				currentToken->attribute_set("token-kind", tokenKind);
@@ -303,7 +308,8 @@ namespace
 		{
 			CXCursor declaration = clang_getNullCursor();
 			auto     visit       = [&](CXCursor cursor, CXCursor parent) {
-                if (clang_isDeclaration(cursor.kind))
+                if (clang_isDeclaration(cursor.kind) ||
+                    (cursor.kind == CXCursor_MacroDefinition))
                 {
                     if (usr ==
                         std::string_view{String(clang_getCursorUSR(cursor))})
@@ -331,32 +337,26 @@ namespace
 			tree->kind = "clang-doc";
 			if (clang_getCursorKind(declaration) == CXCursor_FunctionDecl)
 			{
-				auto functionTree  = tree->new_child();
-				auto addToken 	= [&](const std::string &kind, const std::string &text) {
-					auto token = functionTree->new_child();
-					token->kind = "code-run";
-					token->attribute_set("token-kind", kind);
-					token->append_text(text);
-					return token;
+				auto functionTree = tree->new_child();
+				auto addToken     = [&](const std::string &kind,
+                                    const std::string &text) {
+                    auto token  = functionTree->new_child();
+                    token->kind = "code-run";
+                    token->attribute_set("token-kind", kind);
+                    token->append_text(text);
+                    return token;
 				};
-				functionTree->kind = "function";
-				CXType type        = clang_getCursorType(declaration);
+				functionTree->kind = "code";
+				functionTree->attribute_set("code-kind", "listing");
+				tree->attribute_set("code-declaration-kind", "function");
+				CXType type = clang_getCursorType(declaration);
 				String typeName =
 				  clang_getTypeSpelling(clang_getResultType(type));
 				addToken("TypeRef", typeName);
 				functionTree->append_text(" ");
-				auto last = functionTree->children.back();
-				if (!std::holds_alternative<std::string>(last))
-				{
-					std::cerr << "Last is not a string!" << std::endl;
-				}
-				else
-				{
-					std::cerr << "Last is a string: "
-					          << std::get<std::string>(last) << std::endl;
-				}
 				String spelling = clang_getCursorSpelling(declaration);
 				addToken("FunctionName", spelling);
+				tree->attribute_set("code-declaration-entity", spelling);
 				addToken("Punctuation", "(");
 				for (unsigned i = 0;
 				     i < clang_Cursor_getNumArguments(declaration);
@@ -378,7 +378,174 @@ namespace
 					}
 				}
 				addToken("Punctuation", ")");
-				functionTree->dump();
+			}
+			else if (clang_getCursorKind(declaration) ==
+			         CXCursor_MacroDefinition)
+			{
+				auto macroTree = tree->new_child();
+				auto addToken  = [&](const std::string &kind,
+                                    const std::string &text) {
+                    auto token  = macroTree->new_child();
+                    token->kind = "code-run";
+                    token->attribute_set("token-kind", kind);
+                    token->append_text(text);
+                    return token;
+				};
+				macroTree->kind = "code";
+				macroTree->attribute_set("code-kind", "listing");
+				tree->attribute_set("code-declaration-kind", "macro");
+				String spelling = clang_getCursorSpelling(declaration);
+				addToken("MacroName", spelling);
+				tree->attribute_set("code-declaration-entity", spelling);
+				// If this is a function-like macro, we can't just walk its
+				// arguments (as we do for a function) because they're not
+				// exposed.  Instead, we have to walk the tokens and stop when
+				// we get to the close bracket that matches the first open
+				// bracket.
+				if (clang_Cursor_isMacroFunctionLike(declaration) > 0)
+				{
+					CXToken *tokens;
+					unsigned tokenCount;
+					clang_tokenize(translationUnit,
+					               clang_getCursorExtent(declaration),
+					               &tokens,
+					               &tokenCount);
+					unsigned bracketCount = 0;
+					for (unsigned i = 1; i < tokenCount; i++)
+					{
+						String tokenSpelling =
+						  clang_getTokenSpelling(translationUnit, tokens[i]);
+						std::string_view tokenText = tokenSpelling;
+						if (tokenText == "(")
+						{
+							bracketCount++;
+						}
+						else if (tokenText == ")")
+						{
+							bracketCount--;
+						}
+						addToken(token_kind(tokens[i]),
+						         String{clang_getTokenSpelling(translationUnit,
+						                                       tokens[i])});
+						if (bracketCount == 0)
+						{
+							break;
+						}
+					}
+					clang_disposeTokens(translationUnit, tokens, tokenCount);
+				}
+
+				// libclang doesn't expose parsed comments for macros, so we
+				// have to do the parsing ourself.
+
+				// Start by looking on the line before the macro definition.
+				auto     location = clang_getCursorLocation(declaration);
+				CXFile   file;
+				unsigned line;
+				clang_getExpansionLocation(
+				  location, &file, &line, nullptr, nullptr);
+				auto commentTree  = tree->new_child();
+				commentTree->kind = "p";
+				bool commentFound = false;
+				line--;
+				CXToken *commentTokens;
+				unsigned commentTokenCount;
+				// Clang reports comments as a single token.  If the line
+				// before is the middle of a multi-line comment, we need to
+				// keep going back until we find the start of the comment.
+				//
+				// FIXME: This currently finds the first comment.  If we have a
+				// multi-line comment that uses /// instead of /** then we will
+				// get only the last line.  CHERIoT's style guide tells you not
+				// to do this, but we should handle it.
+				do
+				{
+					CXSourceLocation commentLocation =
+					  clang_getLocation(translationUnit, file, line, 1);
+					clang_tokenize(
+					  translationUnit,
+					  clang_getRange(commentLocation, commentLocation),
+					  &commentTokens,
+					  &commentTokenCount);
+					std::cerr << "\ncomment token count: " << commentTokenCount
+					          << std::endl;
+					String comment =
+					  clang_getTokenSpelling(translationUnit, commentTokens[0]);
+					std::cerr
+					  << "\nToken kind: " << token_kind(commentTokens[0])
+					  << std::endl;
+					std::vector<CXCursor> cursors;
+					cursors.resize(commentTokenCount);
+					clang_annotateTokens(translationUnit,
+					                     commentTokens,
+					                     commentTokenCount,
+					                     cursors.data());
+					std::cerr
+					  << "\\Cursor kind: "
+					  << (std::string_view)(String)clang_getCursorKindSpelling(
+					       clang_getCursorKind(cursors[0]))
+					  << std::endl;
+					std::cerr
+					  << "\ncomment token: " << (std::string_view)comment
+					  << std::endl;
+					if (clang_getTokenKind(commentTokens[0]) == CXToken_Comment)
+					{
+						commentFound = true;
+					}
+					else
+					{
+						clang_disposeTokens(
+						  translationUnit, commentTokens, commentTokenCount);
+					}
+				} while (!commentFound && (--line > 0));
+				for (unsigned i = 0; i < commentTokenCount; i++)
+				{
+					// If we are using libclang's comment support, leading
+					// asterisks and so on are stripped, but we can't currently
+					// so do some basic stripping ourselves here.
+					if (clang_getTokenKind(commentTokens[i]) == CXToken_Comment)
+					{
+						String tokenSpelling = clang_getTokenSpelling(
+						  translationUnit, commentTokens[i]);
+						std::stringstream ss(tokenSpelling);
+						std::string       line;
+						bool              isBlock;
+						while (std::getline(ss, line, '\n'))
+						{
+							// Remove leading whitespace
+							line =
+							  std::regex_replace(line, std::regex("^ +"), "");
+							// Remove leading /// or /*
+							if (line.starts_with("///"))
+							{
+								line = line.substr(3);
+							}
+							else if (line.starts_with("/**"))
+							{
+								line    = line.substr(3);
+								isBlock = true;
+							}
+							// If we're in a block comment, remove any leading *
+							else if (isBlock)
+							{
+								if (line.starts_with("* "))
+								{
+									line = line.substr(2);
+								}
+							}
+							// If we're at the end, remove trailing */
+							if (line.ends_with("*/"))
+							{
+								line = line.substr(0, line.size() - 2);
+							}
+							commentTree->append_text(line);
+							commentTree->append_text("\n");
+						}
+					}
+				}
+				clang_disposeTokens(
+				  translationUnit, commentTokens, commentTokenCount);
+				return tree;
 			}
 			else
 			{
@@ -386,8 +553,6 @@ namespace
 				CXSourceLocation start = clang_getRangeStart(range);
 				CXFile           file;
 				String printed = clang_getCursorPrettyPrinted(declaration, 0);
-				std::cerr << "Pretty printed: " << (std::string_view)printed
-				          << std::endl;
 				clang_getExpansionLocation(
 				  start, &file, nullptr, nullptr, nullptr);
 				auto declarationTree =
@@ -398,7 +563,6 @@ namespace
 			}
 			auto docComment = clang_Cursor_getParsedComment(declaration);
 			build_doc_tree(tree, docComment);
-			tree->dump();
 			return tree;
 		}
 
@@ -427,6 +591,8 @@ extern "C" void register_lua_helpers(sol::state &lua)
 	    }),
 	  "usrs_for_function",
 	  &ClangTextBuilder::usrs_for_function,
+	  "usrs_for_macro",
+	  &ClangTextBuilder::usrs_for_macro,
 	  "build_doc_comment",
 	  &ClangTextBuilder::build_doc_comment,
 	  "build_line_range",

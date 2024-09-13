@@ -18,19 +18,31 @@ end
 function visit(textTree)
 	if (type(textTree) ~= "string") then
 		if textTree.kind == "clang-doc" then
+			textTree:dump()
 			textTree.kind = "div";
 			textTree:attribute_set("class", "code-documentation")
 			textTree:visit(visit)
+			local innerDiv = TextTree.new("div")
+			innerDiv:attribute_set("class", "code-documentation-inner")
+			local heading = innerDiv:new_child()
+			heading.kind = "span"
+			heading:append_text("Documentation for the " .. textTree:attribute("code-declaration-entity") .. " " .. textTree:attribute("code-declaration-kind"))
+			heading:attribute_set("class", "code-documentation-heading")
+			innerDiv:take_children(textTree)
+			textTree:attribute_erase("code-declaration-entity")
+			textTree:attribute_erase("code-declaration-kind")
+			textTree:append_child(innerDiv)
+			textTree:dump()
 			return {textTree}
 		elseif textTree.kind ~= "code" then
 			textTree:visit(visitCodeRuns)
 			textTree:visit(visit)
 		else
 			textTree:visit(visitCodeRuns)
-			local div = TextTree:new("div")
+			local div = TextTree.new("div")
 			div:attribute_set("class", "listing")
 			div:append_child(textTree)
-			local code_line = TextTree:new()
+			local code_line = TextTree.new()
 			code_line.kind = "code"
 			code_line:attribute_set("class", "listing-line")
 			code_line:take_children(textTree)
@@ -59,8 +71,10 @@ function visit(textTree)
 			label:append_text(textTree:attribute("caption"))
 			local exampleOrigin = label:new_child()
 			exampleOrigin.kind = "span"
-			exampleOrigin:attribute_set("class", "listing-origin")
-			exampleOrigin:append_text(textTree:attribute("filename"))
+			if textTree:has_attribute("filename") then
+				exampleOrigin:attribute_set("class", "listing-origin")
+				exampleOrigin:append_text(textTree:attribute("filename"))
+			end
 			textTree:attribute_erase("label")
 			textTree:attribute_erase("filename")
 			textTree:attribute_erase("caption")

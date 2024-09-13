@@ -123,11 +123,10 @@ function cleanMarkdown(textTree)
 	else
 		if (textTree.kind == "p") then
 			textTree:visit(cleanMarkdown)
-		else
-			print("Unhandled kind: ", textTree.kind)
 		end
 		if listNode then
 			local ret = {listNode, textTree}
+			listNode = nil
 			return ret;
 		end
 	end
@@ -139,18 +138,27 @@ function visit(textTree)
 		if (textTree.kind == "codelisting") then
 			return handleCodeListing(textTree)
 		end
-		if (textTree.kind == "functiondoc") then
+		if (textTree.kind == "functiondoc") or (textTree.kind == "macrodoc") then
+			local DocumentedKinds = {
+				"functiondoc", "Function",
+				"macrodoc", "Macro"
+			}
 			-- FIXME: Memoise.
 			local clang = ClangTextBuilder.new('test.cc', arguments)
 			local usr = textTree:attribute("usr")
 			if isempty(usr) then
-				local USRs = clang:usrs_for_function(textTree.children[1])
+				local USRs
+				if textTree.kind == "macrodoc" then
+					USRs = clang:usrs_for_macro(textTree.children[1])
+				else
+					USRs = clang:usrs_for_function(textTree.children[1])
+				end
 				if #USRs == 0 then
 					textTree:error("Function not found: " .. textTree.children[1])
 					return {textTree}
 				end
 				if not (#USRs == 1) then
-					textTree:error("Function name is ambiguous, please provide a USR for '" .. textTree.children[1] .. "'.")
+					textTree:error(DocumentedKinds[textTree.kind] .. "name is ambiguous, please provide a USR for '" .. textTree.children[1] .. "'.")
 					for _, usr in pairs(USRs) do
 						print("Valid USR: ", usr)
 					end

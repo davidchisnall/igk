@@ -259,7 +259,6 @@ class TextTree : public std::enable_shared_from_this<TextTree>
 		}
 		else
 		{
-			std::cerr << "Adding text '" << text << "' to " << kind << std::endl;
 			children.push_back(text);
 		}
 	}
