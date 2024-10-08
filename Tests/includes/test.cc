@@ -1,4 +1,14 @@
-#include <iostream>
+
+// Fake ostream so that we don't need to include iostream
+namespace std {
+	struct ostream {
+		ostream& operator<<(const char*);
+		ostream& operator<<(int);
+		ostream& operator<<(std::ostream& (*)(std::ostream&));
+	};
+	ostream cout;
+	int endl;
+}
 
 /// This is a macro
 #define MACRO 1

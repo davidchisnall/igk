@@ -1,4 +1,4 @@
-\code[label=lst:example,filename=includes/test.cc,caption=Example of a thing,first-line=12,code-kind=listing]{\code-run[token-kind=Declaration]{static int} \code-run[token-kind=Declaration]{y}\code-run[token-kind=Punctuation]{;}
+\code[label=lst:example,filename=includes/test.cc,caption=Example of a thing,first-line=22,code-kind=listing]{\code-run[token-kind=Declaration]{static int} \code-run[token-kind=Declaration]{y}\code-run[token-kind=Punctuation]{;}
 
 \code-run[token-kind=Declaration]{class} \code-run[token-kind=Declaration]{Foo} \code-run[token-kind=Punctuation]{{\}}\code-run[token-kind=Punctuation]{;}
 
