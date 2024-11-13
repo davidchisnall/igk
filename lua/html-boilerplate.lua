@@ -7,6 +7,8 @@ function process(textTree)
 	link:attribute_set("rel", "stylesheet")
 	link:attribute_set("href", "book.css")
 	head:append_child(link)
+	local metaCharset = head:new_child("meta")
+	metaCharset:attribute_set("charset", "UTF-8")
 	html:append_child(head)
 	html:append_child(body)
 	return html 
