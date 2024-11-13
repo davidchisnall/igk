@@ -102,7 +102,6 @@ class TextTree : public std::enable_shared_from_this<TextTree>
 		return clone;
 	}
 
-
 	TextTreePointer deep_clone()
 	{
 		auto clone = shallow_clone();
@@ -114,7 +113,8 @@ class TextTree : public std::enable_shared_from_this<TextTree>
 			}
 			else
 			{
-				clone->append_child(std::get<TextTreePointer>(child)->deep_clone());
+				clone->append_child(
+				  std::get<TextTreePointer>(child)->deep_clone());
 			}
 		}
 		return clone;
@@ -338,6 +338,38 @@ class TextTree : public std::enable_shared_from_this<TextTree>
 		{
 		};
 		return std::make_shared<MakeSharedEnabler>();
+	}
+
+	/**
+	 * Return the body of this as text.
+	 */
+	std::string text()
+	{
+		// Special case if we have only one child and it's a string: just return
+		// it.
+		if ((children.size() == 1) &&
+		    std::holds_alternative<std::string>(children[0]))
+		{
+			return std::get<std::string>(children[0]);
+		}
+		std::string result;
+		for (auto &child : children)
+		{
+			std::visit(
+			  [&result](auto &&arg) {
+				  if constexpr (std::is_same_v<std::decay_t<decltype(arg)>,
+				                               std::string>)
+				  {
+					  result += arg;
+				  }
+				  else
+				  {
+					  result += arg->text();
+				  }
+			  },
+			  child);
+		}
+		return result;
 	}
 
 	void dump();

@@ -40,6 +40,7 @@ class TextTreeBuilder : public TokenHandler
 	virtual void command_start(SourceRange range, std::string command)
 	{
 		current              = current->new_child();
+		assert(current);
 		current->sourceRange = range;
 		current->kind        = command;
 	}
@@ -55,6 +56,7 @@ class TextTreeBuilder : public TokenHandler
 			  range.second,
 			  "Terminating unopened command",
 			  SourceManager::Severity::Fatal);
+			throw std::logic_error("Terminating unopened command");
 		}
 	}
 
@@ -521,6 +523,26 @@ class TeXStyleScanner
 	}
 };
 
+TextTreePointer read_file(const std::filesystem::path &inputPath)
+{
+	std::ifstream file{inputPath, std::ios::binary};
+	std::string   text;
+	auto          size = std::filesystem::file_size(inputPath);
+	text.resize(size);
+	text.assign(std::istreambuf_iterator<char>(file),
+	            std::istreambuf_iterator<char>());
+	TextTreeBuilder treeBuilder;
+	SourceManager  &sourceManager = SourceManager::shared_instance();
+	auto [fileID, contents] =
+	  sourceManager.add_file(inputPath, std::move(text));
+	try {
+	TeXStyleScanner(sourceManager, fileID, contents, treeBuilder);
+	return treeBuilder.complete();
+	} catch (const std::exception &e) {
+		return nullptr;
+	}
+}
+
 std::string
 replace_all(std::string str, const std::string &from, const std::string &to)
 {
@@ -739,6 +761,13 @@ class LuaPass : public TextPass
 	using PluginHook = std::function<void(sol::state &)>;
 
 	private:
+	/**
+	 * State object shared across all passes that can be used to pass
+	 * information between passes.  Each pass is run in a clean Lua VM, so this
+	 * can store only strings.
+	 */
+	inline static std::unordered_map<std::string, std::string> config;
+
 	inline static std::vector<std::function<void(sol::state &)>> plugins;
 	sol::state                                                   lua;
 	std::function<TextTreePointer(TextTreePointer)> processFunction;
@@ -752,6 +781,20 @@ class LuaPass : public TextPass
 		};
 		lua.new_usertype<Test>(
 		  "Test", "new", sol::constructors<Test(int)>(), "x", &Test::x);
+		lua.new_usertype<TextPass>("Pass",
+		                           "process",
+		                           &TextPass::process,
+		                           "as_output_pass",
+		                           [](TextPass &pass) -> OutputPass * {
+			                           return dynamic_cast<OutputPass *>(&pass);
+		                           });
+		lua.new_usertype<OutputPass>("OutputPass",
+		                             "output_file",
+		                             &OutputPass::output_file,
+		                             "output_stderr",
+		                             &OutputPass::output_stderr,
+		                             "output_stdout",
+		                             &OutputPass::output_stdout);
 		sol::usertype<TextTree> textTreeType = lua.new_usertype<TextTree>(
 		  "TextTree",
 		  "new",
@@ -803,15 +846,10 @@ class LuaPass : public TextPass
 		  },
 		  "source_directory_name",
 		  [](TextTree &textTree) {
-			  std::cerr << "source_directory_name" << std::endl;
-			  auto sm = SourceManager::shared_instance();
-			  std::cerr << "Source range: "
-			            << sm.expand(textTree.sourceRange.first).fileID
-			            << std::endl;
+			  auto  sm = SourceManager::shared_instance();
 			  auto &file =
 			    sm.file_for_id(sm.expand(textTree.sourceRange.first).fileID);
 			  std::filesystem::path path = file;
-			  std::cerr << "Path: " << path << std::endl;
 			  if (path.has_parent_path())
 			  {
 				  return path.parent_path().string();
@@ -836,6 +874,8 @@ class LuaPass : public TextPass
 		  },
 		  "clear",
 		  &TextTree::clear,
+		  "text",
+		  &TextTree::text,
 		  "parent",
 		  static_cast<TextTreePointer (TextTree::*)() const>(&TextTree::parent),
 		  "has_attribute",
@@ -851,6 +891,8 @@ class LuaPass : public TextPass
 		sol::usertype<TextPass> textPassType =
 		  lua.new_usertype<TextPass>("TextPass", "process", &TextPass::process);
 		lua["create_pass"] = &TextPassRegistry::create;
+		lua["config"]      = &config;
+		lua["read_file"]   = [](std::string path) { return read_file(path); };
 		for (auto &plugin : plugins)
 		{
 			plugin(lua);
@@ -981,18 +1023,7 @@ int main(int argc, char *argv[])
 	{
 		LuaPassFactory::register_lua_directory(dir);
 	}
-	std::ifstream file{inputPath, std::ios::binary};
-	std::string   text;
-	auto          size = std::filesystem::file_size(inputPath);
-	text.resize(size);
-	text.assign(std::istreambuf_iterator<char>(file),
-	            std::istreambuf_iterator<char>());
-	TextTreeBuilder treeBuilder;
-	SourceManager  &sourceManager = SourceManager::shared_instance();
-	auto [fileID, contents] =
-	  sourceManager.add_file(inputPath, std::move(text));
-	TeXStyleScanner(sourceManager, fileID, contents, treeBuilder);
-	auto tree = treeBuilder.complete();
+	auto tree = read_file(inputPath);
 	for (auto &name : passNames)
 	{
 		auto pass = TextPassRegistry().create(name);
