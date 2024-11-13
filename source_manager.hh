@@ -145,11 +145,12 @@ class SourceManager
 			set_bits(line, LineOffset, LineBits);
 			set_bits(offset, OffsetOffset, OffsetBits);
 		}
+
 		public:
 		/**
 		 * Default constructor, creates an invalid source location.
 		 */
-		CompressedSourceLocation()  {}
+		CompressedSourceLocation() {}
 
 		/**
 		 * Check if this source location is valid.
@@ -230,7 +231,8 @@ class SourceManager
 		}
 		if (!start.is_valid())
 		{
-			fmt::print(stderr, "Unknown source location {}:\n{}\n",
+			fmt::print(stderr,
+			           "Unknown source location {}:\n{}\n",
 			           fmt::styled(isError ? "Error" : "Warning",
 			                       isError
 			                         ? fmt::fg(fmt::terminal_color::red)
@@ -270,10 +272,11 @@ class SourceManager
 		}
 		// Approximate the number of terminal characters in a run.  This should
 		// be done properly with a grapheme iterator.
-		auto characters = [](auto start, auto end) {
+		auto characters = [](auto start, auto end, size_t *tabs = nullptr) {
 			char32_t    c;
 			std::string ret;
 			size_t      characters = 0;
+			size_t      tabsCount  = 0;
 			while (start != end)
 			{
 				int32_t offset = 0;
@@ -287,17 +290,41 @@ class SourceManager
 				{
 					characters++;
 				}
+				else if (c == '\t')
+				{
+					tabsCount++;
+				}
+			}
+			if (tabs)
+			{
+				*tabs = tabsCount;
 			}
 			return characters;
 		};
 		// Number of characters in each run.  We will subtract one from the
 		// number in the middle because we always print the caret.
-		size_t charsBefore = characters(lineStartIter, startIter);
+		size_t tabsBefore  = 0;
+		size_t charsBefore = characters(lineStartIter, startIter, &tabsBefore);
 		size_t charsMiddle =
 		  std::max<size_t>(1, characters(startIter, endIter));
 		size_t charsAfter = characters(endIter, lineEndIter);
+		// Create the string of spaces and tabs to align the caret.
+		// Note: This is not correct if the start interleaves tabs and spaces,
+		// but it will work in the common case. We should fix it by constructing
+		// this string as we iterate over the initial range.
+		std::string spaces;
+		spaces.reserve(charsBefore);
+		for (size_t i = 0; i < tabsBefore; i++)
+		{
+			spaces += '\t';
+		}
+		for (size_t i = tabsBefore; i < charsBefore; i++)
+		{
+			spaces += ' ';
+		}
 		// Print the message!
-		fmt::print(stderr, "{}:{}:{}: {}: {}:\n{}\n{}{}{}{}\n",
+		fmt::print(stderr,
+		           "{}:{}:{}: {}: {}:\n{}\n{}{}{}{}\n",
 		           fileName,
 		           startLoc.line,
 		           charsBefore,
@@ -306,7 +333,7 @@ class SourceManager
 		                               : fmt::fg(fmt::terminal_color::yellow)),
 		           message,
 		           std::string(lineStartIter, lineEndIter),
-		           std::string(charsBefore, ' '),
+		           spaces,
 		           fmt::styled('^', fmt::fg(fmt::terminal_color::green)),
 		           fmt::styled(std::string(charsMiddle - 1, '~'),
 		                       fmt::fg(fmt::terminal_color::green)),

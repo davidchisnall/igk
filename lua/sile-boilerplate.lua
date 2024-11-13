@@ -8,7 +8,12 @@ function process(textTree)
 	addUse("lists")
 	addUse("verbatim")
 	addUse("color")
-	document:attribute_set("class", "book")
+	addUse("labelrefs")
+	addUse("ptable")
+	document:attribute_set("class", "resilient.book")
+	document:attribute_set("layout", "division 9")
+	document:attribute_set("papersize", "6in x 9in")
+	document:new_child("tableofcontents")
 	document:append_child(textTree)
 	return document 
 end

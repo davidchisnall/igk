@@ -1,0 +1,10 @@
+
+A paragraph \em{with some markup}
+of text.
+
+Another paragraph.
+This one has \it{two} sentences.
+
+Some kinds of capabilities can also be \keyword{revoked}.
+This is traditionally the hardest operation to perform on capabilities.
+

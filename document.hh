@@ -102,6 +102,24 @@ class TextTree : public std::enable_shared_from_this<TextTree>
 		return clone;
 	}
 
+
+	TextTreePointer deep_clone()
+	{
+		auto clone = shallow_clone();
+		for (auto &child : children)
+		{
+			if (std::holds_alternative<std::string>(child))
+			{
+				clone->append_text(std::get<std::string>(child));
+			}
+			else
+			{
+				clone->append_child(std::get<TextTreePointer>(child)->deep_clone());
+			}
+		}
+		return clone;
+	}
+
 	std::pair<Child, Child> split_at_byte_index(size_t index)
 	{
 		TextTreePointer left  = shallow_clone();

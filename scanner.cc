@@ -48,6 +48,14 @@ class TextTreeBuilder : public TokenHandler
 	{
 		current->sourceRange.second = range.second;
 		current                     = current->parent();
+		if (!current)
+		{
+			SourceManager::shared_instance().report_error(
+			  range.first,
+			  range.second,
+			  "Terminating unopened command",
+			  SourceManager::Severity::Fatal);
+		}
 	}
 
 	virtual void
@@ -764,14 +772,15 @@ class LuaPass : public TextPass
 		  "children",
 		  &TextTree::children,
 		  "new_child",
-		  sol::factories([](TextTree &textTree, std::optional<std::string> kind) {
-			  auto tree = textTree.new_child();
-			  if (kind)
-			  {
-				  tree->kind = *kind;
-			  }
-			  return tree;
-		  }),
+		  sol::factories(
+		    [](TextTree &textTree, std::optional<std::string> kind) {
+			    auto tree = textTree.new_child();
+			    if (kind)
+			    {
+				    tree->kind = *kind;
+			    }
+			    return tree;
+		    }),
 		  "append_child",
 		  &TextTree::append_child,
 		  "extract_children",
@@ -809,6 +818,8 @@ class LuaPass : public TextPass
 			  }
 			  return std::filesystem::current_path().string();
 		  },
+		  "deep_clone",
+		  &TextTree::deep_clone,
 		  "shallow_clone",
 		  &TextTree::shallow_clone,
 		  "find_string",
@@ -915,7 +926,7 @@ int main(int argc, char *argv[])
 	std::vector<std::filesystem::path> pluginPaths;
 	std::filesystem::path              inputPath;
 	std::vector<std::string>           passNames;
-	bool printAfterAll = false;
+	bool                               printAfterAll = false;
 	CLI::App                           app;
 	app
 	  .add_option(
@@ -926,10 +937,9 @@ int main(int argc, char *argv[])
 	app.add_option("--file", inputPath, "Input file to process")
 	  ->required()
 	  ->check(CLI::ExistingFile);
-	app
-	  .add_flag("--print-after-all",
-	              printAfterAll,
-	              "Print the tree after each pass runs");
+	app.add_flag("--print-after-all",
+	             printAfterAll,
+	             "Print the tree after each pass runs");
 	app
 	  .add_option("--plugin",
 	              pluginPaths,

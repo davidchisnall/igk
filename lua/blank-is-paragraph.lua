@@ -1,11 +1,11 @@
 
 local skipNodes = {
-	"chapter",
-	"section",
-	"subsection",
-	"subsubsection",
-	"itemize",
-	"enumerate",
+	chapter = true,
+	section = true,
+	subsection = true,
+	subsubsection = true,
+	itemize = true,
+	enumerate = true,
 }
 
 local nodes = {}
@@ -21,30 +21,47 @@ function pushNode()
 	openNode = TextTree.new("p")
 end
 
+function node()
+	if openNode == nil then
+		openNode = TextTree.new("p")
+	end
+	return openNode
+end
+
+-- Find pairs of line breaks in direct children of root
 function findBreaks(textTree)
+	-- If this is a string, split it.  The split points will be paragraph breaks.
 	if type(textTree) == "string" then
-		print("Processing string")
 		local lineBreak = string.find(textTree, "\n\n")
+		-- Iterate over line breaks
 		while lineBreak do
 			if lineBreak == 1 then
-				textTree = string.sub(textTree, 3)
-			else
+				-- If the line break is at the start, create a new paragraph and move on
 				pushNode()
-				openNode:append_text(string.sub(textTree, 1, lineBreak - 1))
-				textTree = string.sub(textTree, lineBreak + 2)
+				textTree = textTree:sub(3)
+			else
+				-- If the line break is not at the start, add the part before
+				-- to the existing paragraph, then create a new paragraph and
+				-- process the rest of the string.
+				node():append_text(string.sub(textTree, 1, lineBreak - 1))
+				textTree = textTree:sub(lineBreak + 2)
+				pushNode()
 			end
+			-- Find the next line break
 			lineBreak = string.find(textTree, "\n\n")
 		end
 		if not (textTree == "") then
-			openNode:append_text(textTree)
+			-- Add the remaining text to the existing paragraph
+			node():append_text(textTree)
 		end
 	else
-		print("Processing " .. textTree.kind)
-		if skipNodes[textTree.kind] == nil  then
+		if skipNodes[textTree.kind] then
+			print("skipping node: ", textTree.kind)
 			pushNode()
 			table.insert(nodes, textTree)
 		else
-			openNode.append_child(textTree)
+			print("not skipping node: ", textTree.kind)
+			node():append_child(textTree)
 		end
 	end
 	return {}
@@ -52,11 +69,8 @@ end
 
 function process(textTree)
 	textTree:visit(findBreaks)
-	pushNode()
 	for _, node in ipairs(nodes) do
 		textTree:append_child(node)
 	end
-	print("Done")
-	--textTree:dump()
 	return textTree 
 end

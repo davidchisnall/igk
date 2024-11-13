@@ -12,28 +12,36 @@ function findBegins(textTree)
 end
 
 local beginDepth = 0
-local beginName
+local beginNames = {}
 local squashedNodes = {}
+
 function squashBegins(textTree)
 	if (not (type(textTree) == "string")) then
 		if textTree.kind == "begin" then
 			beginDepth = beginDepth+1
 			if beginDepth == 1 then
-				beginName = textTree.children[1]
+				table.insert(beginNames, textTree.children[1])
 				return {}
 			end
 		end
 		if textTree.kind == "end" then
+			local name = beginNames[#beginNames]
+			table.remove(beginNames)
 			beginDepth = beginDepth-1
 			if beginDepth == 0 then
-				if not textTree.children[1] == beginName then
+				if not textTree.children[1] == name then
 					textTree:error("Mismatched begin and end!")
 				end
 				textTree.kind = textTree.children[1]
 				textTree:clear()
-				for _, node in ipairs(squashedNodes) do
-					textTree:append_child(node)
+				for i, node in ipairs(squashedNodes) do
+					if (type(node) == "string") then
+						textTree:append_text(node)
+					else
+						textTree:append_child(node)
+					end
 				end
+				squashedNodes = {}
 				return {textTree}
 			end
 		end
