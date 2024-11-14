@@ -1,0 +1,18 @@
+\begin{luasnippet}
+-- Firmware image for the example.
+firmware("hello_world")
+    add_deps("crt", "freestanding", "atomic_fixed")
+    add_deps("example", "mylib")
+    on_load(function(target)
+        target:values_set("board", "$(board)")
+        target:values_set("threads", {
+            {
+                compartment = "hello",
+                priority = 1,
+                entry_point = "say_hello",
+                stack_size = 0x200,
+                trusted_stack_frames = 1
+            \}
+        \}, {expand = false\})
+    end)
+\end{luasnippet}
