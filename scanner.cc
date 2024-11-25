@@ -15,6 +15,7 @@
 #include <memory>
 #include <type_traits>
 #include <unordered_map>
+#include <unordered_set>
 #include <variant>
 
 #include "document.hh"
@@ -39,7 +40,7 @@ class TextTreeBuilder : public TokenHandler
 
 	virtual void command_start(SourceRange range, std::string command)
 	{
-		current              = current->new_child();
+		current = current->new_child();
 		assert(current);
 		current->sourceRange = range;
 		current->kind        = command;
@@ -535,10 +536,13 @@ TextTreePointer read_file(const std::filesystem::path &inputPath)
 	SourceManager  &sourceManager = SourceManager::shared_instance();
 	auto [fileID, contents] =
 	  sourceManager.add_file(inputPath, std::move(text));
-	try {
-	TeXStyleScanner(sourceManager, fileID, contents, treeBuilder);
-	return treeBuilder.complete();
-	} catch (const std::exception &e) {
+	try
+	{
+		TeXStyleScanner(sourceManager, fileID, contents, treeBuilder);
+		return treeBuilder.complete();
+	}
+	catch (const std::exception &e)
+	{
 		return nullptr;
 	}
 }
@@ -673,6 +677,26 @@ void TextTree::dump()
 template<bool XMLTags>
 class XHTMLOutputPass : public OutputPass
 {
+	/**
+	 * HTML defines some tags as void (they do not need a close element).
+	 */
+	inline static std::unordered_set<std::string> VoidTags = {"area",
+	                                                          "base",
+	                                                          "br",
+	                                                          "col",
+	                                                          "command",
+	                                                          "embed",
+	                                                          "hr",
+	                                                          "img",
+	                                                          "input",
+	                                                          "keygen",
+	                                                          "link",
+	                                                          "meta",
+	                                                          "param",
+	                                                          "source",
+	                                                          "track",
+	                                                          "wbr"};
+
 	void visitor(const TextTree::Child &node)
 	{
 		std::visit(
@@ -717,7 +741,8 @@ class XHTMLOutputPass : public OutputPass
 					  }
 					  child->const_visit(
 					    [this](auto node) { return visitor(node); });
-					  if (!child->kind.empty())
+					  if (!child->kind.empty() &&
+					      !VoidTags.contains(child->kind))
 					  {
 						  out() << "</" << child->kind << '>';
 					  }

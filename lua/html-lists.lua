@@ -20,7 +20,7 @@ function itemToDtDl(textTree)
 			end
 			dt:append_text(textTree:attribute("tag"))
 			textTree:attribute_erase("tag")
-			textTree.kind = "dl"
+			textTree.kind = "dd"
 			textTree:visit(visit)
 			return {dt, textTree}
 		end
