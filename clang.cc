@@ -39,6 +39,11 @@ namespace
 			{
 				return clang_getCString(str);
 			}
+			/// Explicitly concert to a C string.
+			const char *c_str()
+			{
+				return clang_getCString(str);
+			}
 		};
 		CXIndex index = clang_createIndex(0, 1);
 
@@ -93,7 +98,12 @@ namespace
 		std::vector<std::string>
 		usrs_for_function(const std::string &functionName)
 		{
-			return usrs_for_entity(functionName, CXCursor_FunctionDecl);
+			auto usrs = usrs_for_entity(functionName, CXCursor_FunctionDecl);
+			if (!usrs.empty())
+			{
+				return usrs;
+			}
+			return usrs_for_entity(functionName, CXCursor_FunctionTemplate);
 		}
 
 		std::vector<std::string> usrs_for_macro(const std::string &macroName)
@@ -148,7 +158,6 @@ namespace
 				end--;
 			}
 
-			std::cerr << "Start: " << start << " End: " << end << std::endl;
 			std::string text;
 			text.resize(end - start);
 			std::ifstream fileStream(fileName);
@@ -357,27 +366,30 @@ namespace
 				String spelling = clang_getCursorSpelling(declaration);
 				addToken("FunctionName", spelling);
 				tree->attribute_set("code-declaration-entity", spelling);
-				addToken("Punctuation", "(");
-				for (unsigned i = 0;
-				     i < clang_Cursor_getNumArguments(declaration);
-				     i++)
+				if (clang_getCursorKind(declaration) == CXCursor_FunctionDecl)
 				{
-					CXCursor argument =
-					  clang_Cursor_getArgument(declaration, i);
-					CXType argumentType = clang_getCursorType(argument);
-					String argumentTypeName =
-					  clang_getTypeSpelling(argumentType);
-					String argumentName = clang_getCursorSpelling(argument);
-					addToken("TypeRef", argumentTypeName);
-					functionTree->append_text(" ");
-					addToken("ParamName", argumentName);
-					if (i < clang_Cursor_getNumArguments(declaration) - 1)
+					addToken("Punctuation", "(");
+					for (int i = 0;
+					     i < clang_Cursor_getNumArguments(declaration);
+					     i++)
 					{
-						addToken("Punctuation", ",");
+						CXCursor argument =
+						  clang_Cursor_getArgument(declaration, i);
+						CXType argumentType = clang_getCursorType(argument);
+						String argumentTypeName =
+						  clang_getTypeSpelling(argumentType);
+						String argumentName = clang_getCursorSpelling(argument);
+						addToken("TypeRef", argumentTypeName);
 						functionTree->append_text(" ");
+						addToken("ParamName", argumentName);
+						if (i < clang_Cursor_getNumArguments(declaration) - 1)
+						{
+							addToken("Punctuation", ",");
+							functionTree->append_text(" ");
+						}
 					}
+					addToken("Punctuation", ")");
 				}
-				addToken("Punctuation", ")");
 			}
 			else if (clang_getCursorKind(declaration) ==
 			         CXCursor_MacroDefinition)
@@ -560,6 +572,16 @@ namespace
 				                     start,
 				                     clang_getRangeEnd(range));
 				tree->append_child(declarationTree);
+				if (clang_getCursorKind(declaration) ==
+				    CXCursor_FunctionTemplate)
+				{
+					tree->attribute_set("code-declaration-kind", "function");
+					CXType type = clang_getCursorType(declaration);
+					String typeName =
+					  clang_getTypeSpelling(clang_getResultType(type));
+					String spelling = clang_getCursorSpelling(declaration);
+					tree->attribute_set("code-declaration-entity", spelling);
+				}
 			}
 			auto docComment = clang_Cursor_getParsedComment(declaration);
 			build_doc_tree(tree, docComment);

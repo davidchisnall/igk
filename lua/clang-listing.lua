@@ -1,12 +1,11 @@
-
 -- FIXME: Don't hard code these paths.
 local arguments = {
 	"c++",
 	"-std=c++17",
 	"-I/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/c++/v1",
 	"-I/Library/Developer/CommandLineTools/usr/lib/clang/15.0.0/include",
-	"-I/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include"};
-
+	"-I/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include",
+}
 
 local parsedFiles = {}
 
@@ -17,39 +16,39 @@ function parse_file(fileName)
 	return parsedFiles[fileName]
 end
 
-
 function file_exists(file)
-  local f = io.open(file, "rb")
-  if f then f:close() end
-  return f ~= nil
+	local f = io.open(file, "rb")
+	if f then
+		f:close()
+	end
+	return f ~= nil
 end
 
-
 function lines_from(textTree, file, marker)
-  if not file_exists(file) then
-	  textTree:error("File not found: " .. file)
-	  return nil
-  end
-  local lines = {}
-  local i=1
-  for line in io.lines(file) do 
-	  if string.find(line, marker .. "#begin") then
-		  lines.start = i+1
-	  end
-	  if string.find(line, marker .. "#end") then
-		  lines.finish = i-1
-	  end
-	  i = i + 1
-  end
-  if (not lines.start) or (not lines.finish) then
-	  textTree:error("Marker '" .. marker .. "'not found in file: " .. file)
-	  return nil
-  end
-  if (lines.start >= lines.finish) then
-	  textTree:error("Marker '" .. marker .. "' is not valid in file: " .. file)
-	  return nil
-  end
-  return lines
+	if not file_exists(file) then
+		textTree:error("File not found: " .. file)
+		return nil
+	end
+	local lines = {}
+	local i = 1
+	for line in io.lines(file) do
+		if string.find(line, marker .. "#begin") then
+			lines.start = i + 1
+		end
+		if string.find(line, marker .. "#end") then
+			lines.finish = i - 1
+		end
+		i = i + 1
+	end
+	if (not lines.start) or not lines.finish then
+		textTree:error("Marker '" .. marker .. "'not found in file: " .. file)
+		return nil
+	end
+	if lines.start >= lines.finish then
+		textTree:error("Marker '" .. marker .. "' is not valid in file: " .. file)
+		return nil
+	end
+	return lines
 end
 
 function check_attribute(textTree, attribute)
@@ -61,7 +60,7 @@ function check_attribute(textTree, attribute)
 end
 
 function resolve_relative_path(textTree, path)
-	if (path:find("/", 1, true) ~= 1) then
+	if path:find("/", 1, true) ~= 1 then
 		local dirname = textTree:source_directory_name()
 		path = dirname .. "/" .. path
 	end
@@ -69,29 +68,33 @@ function resolve_relative_path(textTree, path)
 end
 
 function handleCodeListing(textTree)
-		if not (check_attribute(textTree, "filename") and 
-			check_attribute(textTree, "marker") and 
-			check_attribute(textTree, "caption")) then
-			return {textTree}
-		end
-		local fileName = resolve_relative_path(textTree, textTree:attribute("filename"))
+	if
+		not (
+			check_attribute(textTree, "filename")
+			and check_attribute(textTree, "marker")
+			and check_attribute(textTree, "caption")
+		)
+	then
+		return { textTree }
+	end
+	local fileName = resolve_relative_path(textTree, textTree:attribute("filename"))
 
-		local clang = ClangTextBuilder.new(fileName, arguments)
-		local lineRange = lines_from(textTree, fileName, textTree:attribute("marker"))
-		if not lineRange then
-			return {textTree}
-		end
-		local code = clang:build_line_range(fileName, lineRange.start, lineRange.finish)
-		code:attribute_set("caption", textTree:attribute("caption"))
-		code:attribute_set("filename", textTree:attribute("filename"))
-		if textTree:has_attribute("label") then
-			code:attribute_set("label", textTree:attribute("label"))
-		end
-		return {code}
+	local clang = ClangTextBuilder.new(fileName, arguments)
+	local lineRange = lines_from(textTree, fileName, textTree:attribute("marker"))
+	if not lineRange then
+		return { textTree }
+	end
+	local code = clang:build_line_range(fileName, lineRange.start, lineRange.finish)
+	code:attribute_set("caption", textTree:attribute("caption"))
+	code:attribute_set("filename", textTree:attribute("filename"))
+	if textTree:has_attribute("label") then
+		code:attribute_set("label", textTree:attribute("label"))
+	end
+	return { code }
 end
 
 local function isempty(s)
-  return s == nil or s == ''
+	return s == nil or s == ""
 end
 
 local listNode = nil
@@ -108,7 +111,7 @@ function cleanMarkdown(textTree)
 			for w in string.gmatch(line, "`([^`]*)`") do
 				local i, e = string.find(line, w)
 				if i > start + 1 then
-					table.insert(results, string.sub(line, start, i-2))
+					table.insert(results, string.sub(line, start, i - 2))
 				end
 				local run = TextTree.new("code-run")
 				run:append_text(w)
@@ -141,38 +144,53 @@ function cleanMarkdown(textTree)
 		end
 		return results
 	else
-		if (textTree.kind == "p") then
+		if textTree.kind == "p" then
 			textTree:visit(cleanMarkdown)
 		end
 		if listNode then
-			local ret = {listNode, textTree}
+			local ret = { listNode, textTree }
 			listNode = nil
-			return ret;
+			return ret
 		end
 	end
-	return {textTree}
+	return { textTree }
 end
 
 local docfile = nil
 
 function visit(textTree)
 	if not (type(textTree) == "string") then
-		if (textTree.kind == "codelisting") then
+		if textTree.kind == "codelisting" then
 			return handleCodeListing(textTree)
 		end
-		if textTree.kind == 'docfile' then
+		if textTree.kind == "compileflags" then
+			local argsFileName = resolve_relative_path(textTree, textTree.children[1])
+			local argsFile = io.open(argsFileName, "rb")
+			if not argsFile then
+				textTree:error("Unable to open compile flags file: " .. argsFileName)
+			end
+			arguments = {}
+			for line in argsFile:lines() do
+				arguments[#arguments + 1] = line
+			end
+			argsFile:close()
+			return {}
+		elseif textTree.kind == "docfile" then
 			docfile = resolve_relative_path(textTree, textTree.children[1])
-			print("Using docfile: ", docfile)
 			return {}
 		elseif (textTree.kind == "functiondoc") or (textTree.kind == "macrodoc") then
 			local DocumentedKinds = {
-				"functiondoc", "Function",
-				"macrodoc", "Macro"
+				"functiondoc",
+				"Function",
+				"macrodoc",
+				"Macro",
 			}
 			-- FIXME: Memoise.
 			if not docfile then
-				textTree:error("Clang documentation directives must be preceded by a \\docfile{} instruction giving the source file to parse")
-				return {textTree}
+				textTree:error(
+					"Clang documentation directives must be preceded by a \\docfile{} instruction giving the source file to parse"
+				)
+				return { textTree }
 			end
 			local clang = ClangTextBuilder.new(docfile, arguments)
 			local usr = textTree:attribute("usr")
@@ -185,25 +203,30 @@ function visit(textTree)
 				end
 				if #USRs == 0 then
 					textTree:error("Function not found: " .. textTree.children[1])
-					return {textTree}
+					return { textTree }
 				end
 				if not (#USRs == 1) then
-					textTree:error(DocumentedKinds[textTree.kind] .. "name is ambiguous, please provide a USR for '" .. textTree.children[1] .. "'.")
+					textTree:error(
+						DocumentedKinds[textTree.kind]
+							.. "name is ambiguous, please provide a USR for '"
+							.. textTree.children[1]
+							.. "'."
+					)
 					for _, usr in pairs(USRs) do
 						print("Valid USR: ", usr)
 					end
-					return {textTree}
+					return { textTree }
 				end
 				usr = USRs[1]
 			end
 			local doc = clang:build_doc_comment(usr)
-			print("Parsed doc:")
-			doc:dump()
 			doc:visit(cleanMarkdown)
-			return {doc}
+			return { doc }
+		else
+			textTree:visit(visit)
 		end
 	end
-	return {textTree}
+	return { textTree }
 end
 
 function process(textTree)
