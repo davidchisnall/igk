@@ -10,13 +10,13 @@ function visit_includes(tree)
 	if type(tree) ~= 'string' then
 		print("Node kind: ", tree.kind)
 		if tree.kind == "include" then
-			print("Parsing include")
 			local newTree = read_file(resolve_relative_path(tree, tree:text()))
 			if newTree then
 				return {newTree}
 			end
+			tree:report_error("Failed to parse included file: " .. tree:text())
 		end
-		tree = tree:visit(visit_includes)
+		tree:visit(visit_includes)
 	end
 	return { tree }
 end

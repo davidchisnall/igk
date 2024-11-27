@@ -56,11 +56,9 @@ function findBreaks(textTree)
 		end
 	else
 		if skipNodes[textTree.kind] then
-			print("skipping node: ", textTree.kind)
 			pushNode()
 			table.insert(nodes, textTree)
 		else
-			print("not skipping node: ", textTree.kind)
 			node():append_child(textTree)
 		end
 	end

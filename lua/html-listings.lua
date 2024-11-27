@@ -18,7 +18,6 @@ end
 function visit(textTree)
 	if (type(textTree) ~= "string") then
 		if textTree.kind == "clang-doc" then
-			textTree:dump()
 			textTree.kind = "div";
 			textTree:attribute_set("class", "code-documentation")
 			textTree:visit(visit)
@@ -32,7 +31,6 @@ function visit(textTree)
 			textTree:attribute_erase("code-declaration-entity")
 			textTree:attribute_erase("code-declaration-kind")
 			textTree:append_child(innerDiv)
-			textTree:dump()
 			return {textTree}
 		elseif textTree.kind ~= "code" then
 			textTree:visit(visitCodeRuns)

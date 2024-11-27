@@ -37,7 +37,6 @@ visit = function (textTree)
 			textTree.kind = "ol"
 			textTree:visit(itemToLi)
 		elseif (textTree.kind == "description") then
-			textTree:dump()
 			textTree.kind = "dl"
 			textTree:visit(itemToDtDl)
 		else
