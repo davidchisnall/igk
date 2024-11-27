@@ -898,6 +898,14 @@ class LuaPass : public TextPass
 			    message,
 			    SourceManager::Severity::Error);
 		  },
+		  "fatal_error",
+		  [](TextTree &textTree, const std::string &message) {
+			  SourceManager::shared_instance().report_error(
+			    textTree.sourceRange.first,
+			    textTree.sourceRange.second,
+			    message,
+			    SourceManager::Severity::Fatal);
+		  },
 		  "clear",
 		  &TextTree::clear,
 		  "text",

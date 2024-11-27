@@ -338,6 +338,10 @@ class SourceManager
 		           fmt::styled(std::string(charsMiddle - 1, '~'),
 		                       fmt::fg(fmt::terminal_color::green)),
 		           std::string(charsAfter, ' '));
+		if (severity == Severity::Fatal)
+		{
+			exit(EXIT_FAILURE);
+		}
 	}
 
 	/**
