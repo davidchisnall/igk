@@ -798,6 +798,50 @@ class LuaPass : public TextPass
 	sol::state                                                   lua;
 	std::function<TextTreePointer(TextTreePointer)> processFunction;
 
+	static TextTreePointer create_from_lua(sol::table object)
+	{
+		auto tree = TextTree::create();
+		auto kind = object["kind"];
+		if (kind == nullptr)
+		{
+			return nullptr;
+		}
+		tree->kind      = kind;
+		auto attributes = object["attributes"];
+		if (attributes.is<sol::table>())
+		{
+			for (auto &[key, value] : object.get<sol::table>("attributes"))
+			{
+				tree->attribute_set(key.as<std::string>(),
+				                    sol::utility::to_string(value));
+			}
+		}
+		auto children = object["children"];
+		if (children.is<sol::table>())
+		{
+			for (auto &[key, value] : object.get<sol::table>("children"))
+			{
+				if (value.is<TextTree>())
+				{
+					tree->append_child(value.as<TextTreePointer>());
+				}
+				else if (value.get_type() == sol::type::string)
+				{
+					tree->append_text(value.as<std::string>());
+				}
+				else
+				{
+					auto child = create_from_lua(value);
+					if (child)
+					{
+						tree->append_child(child);
+					}
+				}
+			}
+		}
+		return tree;
+	}
+
 	TextTreePointer process(TextTreePointer tree) override
 	{
 		struct Test
@@ -832,6 +876,8 @@ class LuaPass : public TextPass
 			  }
 			  return tree;
 		  }),
+		  "create",
+		  &create_from_lua,
 		  "kind",
 		  &TextTree::kind,
 		  "visit",
