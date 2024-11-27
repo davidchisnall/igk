@@ -751,7 +751,8 @@ class XHTMLOutputPass : public OutputPass
 			  else
 			  {
 				  // FIXME: Escape more XML entities
-				  std::string escaped = replace_all(child, "\"", "&quot;");
+				  std::string escaped = replace_all(child, "&", "&amp;");
+				  escaped             = replace_all(escaped, "\"", "&quot;");
 				  escaped             = replace_all(escaped, "<", "&lt;");
 				  escaped             = replace_all(escaped, ">", "&gt;");
 				  out() << escaped;
