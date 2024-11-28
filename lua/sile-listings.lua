@@ -1,50 +1,74 @@
 -- TODO: Colour differently for print
 
 local colours = {
-	Declaration  = "#0000FF",
-	Punctuation  = "#000000",
-	TypeRef  = "#0000FF",
-	DeclRef  = "#00a000",
-	FunctionName  = "#00a000",
-	ParamName  = "#00a000",
-	Literal  = "#a00000",
-	Keyword  = "#ff0000",
-	Comment  = "#008000",
+	Declaration = "#0000FF",
+	Punctuation = "#000000",
+	TypeRef = "#0000FF",
+	DeclRef = "#00a000",
+	FunctionName = "#00a000",
+	ParamName = "#00a000",
+	Literal = "#a00000",
+	Keyword = "#ff0000",
+	Comment = "#008000",
+	Identifier = "#000000",
 }
-
 
 function visitCodeRuns(textTree)
 	if type(textTree) ~= "string" then
-		if (textTree.kind == "code-run") then
+		if textTree.kind == "code-run" then
 			textTree.kind = "color"
-			local kind = textTree:attribute("token-kind")
+			local kind = textTree:has_attribute("token-kind") and textTree:attribute("token-kind") or "Identifier"
 			textTree:attribute_erase("token-kind")
 			textTree:attribute_set("color", colours[kind])
 		end
 	end
-	return {textTree}
+	return { textTree }
 end
 
 function visit(textTree)
-	if (type(textTree) ~= "string") then
+	if type(textTree) ~= "string" then
 		if textTree.kind == "clang-doc" then
-			-- Not done yet!
-			textTree:dump()
-			textTree.kind = "div";
-			textTree:attribute_set("class", "code-documentation")
 			textTree:visit(visit)
-			local innerDiv = TextTree.new("div")
-			innerDiv:attribute_set("class", "code-documentation-inner")
-			local heading = innerDiv:new_child()
-			heading.kind = "span"
-			heading:append_text("Documentation for the " .. textTree:attribute("code-declaration-entity") .. " " .. textTree:attribute("code-declaration-kind"))
-			heading:attribute_set("class", "code-documentation-heading")
-			innerDiv:take_children(textTree)
+			local center = TextTree.create({
+				kind = "center",
+				children = {
+					{
+						kind = "framebox",
+						attributes = { shadow = true },
+						children = {
+							{
+								kind = "parbox",
+								attributes = {
+									valign = "middle",
+									width = "90%fw",
+								},
+								children = {
+									{
+										kind = "font",
+										attributes = { weight = 900 },
+										children = {
+											"Documentation for the ",
+											{
+												kind = "font",
+												attributes = { family = "Hack" },
+												children = {
+													textTree:attribute("code-declaration-entity"),
+												},
+											},
+											" " .. textTree:attribute("code-declaration-kind"),
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			})
 			textTree:attribute_erase("code-declaration-entity")
 			textTree:attribute_erase("code-declaration-kind")
-			textTree:append_child(innerDiv)
-			textTree:dump()
-			return {textTree}
+			center.children[1].children[1]:take_children(textTree)
+			center.children[1].children[1]:take_children(textTree)
+			return { center }
 		elseif textTree.kind ~= "code" then
 			textTree:visit(visitCodeRuns)
 			textTree:visit(visit)
@@ -52,9 +76,7 @@ function visit(textTree)
 			textTree:visit(visitCodeRuns)
 			textTree.kind = "verbatim"
 			local code_line = TextTree.new()
-			print("new node ")
 			code_line:take_children(textTree)
-			print("taken children")
 			local linebreak = code_line:find_string("\n")
 			local line = nil
 			if textTree:has_attribute("first-line") then
@@ -62,12 +84,8 @@ function visit(textTree)
 			end
 			while not (linebreak == -1) do
 				local split = code_line:split_at_byte_index(linebreak)
-				print("Split:")
-				split[1]:dump()
-				print("Adding first half")
-				split[1]:dump()
 				if line then
-					textTree:append_text(tostring(line) .. ' ')
+					textTree:append_text(tostring(line) .. " ")
 					line = line + 1
 				end
 				textTree:append_child(split[1])
@@ -79,7 +97,7 @@ function visit(textTree)
 			textTree:new_child("break")
 			textTree:append_text("\n")
 			if line then
-				textTree:append_text(tostring(line) .. ' ')
+				textTree:append_text(tostring(line) .. " ")
 			end
 			textTree:append_child(code_line)
 			textTree:new_child("break")
@@ -101,7 +119,7 @@ function visit(textTree)
 			textTree:attribute_erase("code-kind")
 		end
 	end
-	return {textTree}
+	return { textTree }
 end
 
 function process(textTree)
