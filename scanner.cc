@@ -882,6 +882,11 @@ class LuaPass : public TextPass
 		  &TextTree::kind,
 		  "visit",
 		  &TextTree::visit,
+		  "match",
+		  [](
+		    TextTree &textTree, std::string kind, TextTree::Visitor &&visitor) {
+			  return textTree.match(kind, visitor);
+		  },
 		  "is_empty",
 		  &TextTree::is_empty,
 		  "children",

@@ -65,6 +65,22 @@ class TextTree : public std::enable_shared_from_this<TextTree>
 		}
 	}
 
+	void match(const std::string &kind, Visitor &visitor)
+	{
+		visit([&kind, &visitor](Child &child) {
+			if (std::holds_alternative<TextTreePointer>(child))
+			{
+				auto childNode = std::get<TextTreePointer>(child);
+				if (childNode->kind == kind)
+				{
+					return visitor(child);
+				}
+				childNode->match(kind, visitor);
+			}
+			return std::vector<Child>{child};
+		});
+	}
+
 	void const_visit(ConstVisitor &&visitor) const
 	{
 		for (size_t i = 0; i < children.size(); i++)
