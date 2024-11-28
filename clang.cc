@@ -329,6 +329,19 @@ namespace
                 }
                 return CXChildVisit_Recurse;
 			};
+			auto typeSpelling = [](CXType type) {
+				std::string typeName = String(clang_getTypeSpelling(type));
+				// Remove all occurrences of __capability
+				std::string_view from      = " __capability";
+				size_t           start_pos = 0;
+				while ((start_pos = typeName.find(from, start_pos)) !=
+				       std::string::npos)
+
+				{
+					typeName.erase(start_pos, from.length());
+				}
+				return typeName;
+			};
 			clang_visitChildren(
 			  clang_getTranslationUnitCursor(translationUnit),
 			  [](CXCursor cursor, CXCursor parent, CXClientData clientData) {
@@ -358,9 +371,8 @@ namespace
 				functionTree->kind = "code";
 				functionTree->attribute_set("code-kind", "listing");
 				tree->attribute_set("code-declaration-kind", "function");
-				CXType type = clang_getCursorType(declaration);
-				String typeName =
-				  clang_getTypeSpelling(clang_getResultType(type));
+				CXType type     = clang_getCursorType(declaration);
+				auto   typeName = typeSpelling(clang_getResultType(type));
 				addToken("TypeRef", typeName);
 				functionTree->append_text(" ");
 				String spelling = clang_getCursorSpelling(declaration);
@@ -375,9 +387,8 @@ namespace
 					{
 						CXCursor argument =
 						  clang_Cursor_getArgument(declaration, i);
-						CXType argumentType = clang_getCursorType(argument);
-						String argumentTypeName =
-						  clang_getTypeSpelling(argumentType);
+						CXType argumentType     = clang_getCursorType(argument);
+						auto   argumentTypeName = typeSpelling(argumentType);
 						String argumentName = clang_getCursorSpelling(argument);
 						addToken("TypeRef", argumentTypeName);
 						functionTree->append_text(" ");
@@ -576,9 +587,7 @@ namespace
 				    CXCursor_FunctionTemplate)
 				{
 					tree->attribute_set("code-declaration-kind", "function");
-					CXType type = clang_getCursorType(declaration);
-					String typeName =
-					  clang_getTypeSpelling(clang_getResultType(type));
+					CXType type     = clang_getCursorType(declaration);
 					String spelling = clang_getCursorSpelling(declaration);
 					tree->attribute_set("code-declaration-entity", spelling);
 				}
