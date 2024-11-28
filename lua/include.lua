@@ -8,7 +8,6 @@ end
 
 function visit_includes(tree)
 	if type(tree) ~= 'string' then
-		print("Node kind: ", tree.kind)
 		if tree.kind == "include" then
 			local newTree = read_file(resolve_relative_path(tree, tree:text()))
 			if newTree then
