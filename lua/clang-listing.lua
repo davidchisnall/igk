@@ -178,7 +178,8 @@ function visit(textTree)
 			argsFile:close()
 			return {}
 		elseif textTree.kind == "docfile" then
-			docfile = resolve_relative_path(textTree, textTree.children[1])
+			local docfileName = resolve_relative_path(textTree, textTree.children[1])
+			docfile = ClangTextBuilder.new(docfileName, arguments)
 			return {}
 		elseif (textTree.kind == "functiondoc") or (textTree.kind == "macrodoc") then
 			local DocumentedKinds = {
@@ -187,21 +188,19 @@ function visit(textTree)
 				"macrodoc",
 				"Macro",
 			}
-			-- FIXME: Memoise.
 			if not docfile then
 				textTree:error(
 					"Clang documentation directives must be preceded by a \\docfile{} instruction giving the source file to parse"
 				)
 				return { textTree }
 			end
-			local clang = ClangTextBuilder.new(docfile, arguments)
 			local usr = textTree:attribute("usr")
 			if isempty(usr) then
 				local USRs
 				if textTree.kind == "macrodoc" then
-					USRs = clang:usrs_for_macro(textTree.children[1])
+					USRs = docfile:usrs_for_macro(textTree.children[1])
 				else
-					USRs = clang:usrs_for_function(textTree.children[1])
+					USRs = docfile:usrs_for_function(textTree.children[1])
 				end
 				if #USRs == 0 then
 					textTree:error("Function not found: " .. textTree.children[1])
@@ -221,7 +220,7 @@ function visit(textTree)
 				end
 				usr = USRs[1]
 			end
-			local doc = clang:build_doc_comment(usr)
+			local doc = docfile:build_doc_comment(usr)
 			doc:visit(cleanMarkdown)
 			return { doc }
 		else
