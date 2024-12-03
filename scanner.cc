@@ -786,13 +786,45 @@ class LuaPass : public TextPass
 	public:
 	using PluginHook = std::function<void(sol::state &)>;
 
+	static void config_set(std::string_view key, std::string_view value)
+	{
+		std::string k(key);
+		if ((value.size() == 0) || (value == "true"))
+		{
+			config[k] = true;
+			return;
+		}
+		if (value == "false")
+		{
+			config[k] = false;
+			return;
+		}
+		std::string v(value);
+		size_t      end = 0;
+		try
+		{
+			double doubleValue = std::stod(v, &end);
+			if (end == value.size())
+			{
+				config[k] = doubleValue;
+				return;
+			}
+		}
+		catch (...)
+		{
+		}
+		config[k] = std::move(v);
+	}
+
 	private:
 	/**
 	 * State object shared across all passes that can be used to pass
 	 * information between passes.  Each pass is run in a clean Lua VM, so this
 	 * can store only strings.
 	 */
-	inline static std::unordered_map<std::string, std::string> config;
+	inline static std::unordered_map<std::string,
+	                                 std::variant<double, bool, std::string>>
+	  config;
 
 	inline static std::vector<std::function<void(sol::state &)>> plugins;
 	sol::state                                                   lua;
@@ -1060,7 +1092,21 @@ int main(int argc, char *argv[])
 	std::filesystem::path              inputPath;
 	std::vector<std::string>           passNames;
 	bool                               printAfterAll = false;
-	CLI::App                           app;
+
+	auto registerConfigOption = [&](std::string_view option) {
+		auto eq = option.find('=');
+		if ((eq == std::string_view::npos) || (eq == 0))
+		{
+			throw CLI::ValidationError(
+			  "config options must be key=value pairs");
+		}
+		auto key   = option.substr(0, eq);
+		auto value = option.substr(eq + 1);
+		LuaPass::config_set(key, value);
+	};
+
+	CLI::App app;
+	app.add_option("--config")->each(registerConfigOption);
 	app
 	  .add_option(
 	    "--lua-directory",
@@ -1080,6 +1126,7 @@ int main(int argc, char *argv[])
 	  ->check(CLI::ExistingFile);
 	app.add_option(
 	  "--pass", passNames, "Passes to run (may be specified more than once)");
+
 	CLI11_PARSE(app, argc, argv);
 
 	// Open plugins
