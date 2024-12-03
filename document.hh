@@ -5,6 +5,7 @@
 #include <iostream>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <variant>
 #include <vector>
 
@@ -63,6 +64,22 @@ class TextTree : public std::enable_shared_from_this<TextTree>
 			}
 			i += newChildren.size();
 		}
+	}
+
+	void match_any(const std::unordered_set<std::string> &kinds, Visitor &visitor)
+	{
+		visit([&kinds, &visitor](Child &child) {
+			if (std::holds_alternative<TextTreePointer>(child))
+			{
+				auto childNode = std::get<TextTreePointer>(child);
+				if (kinds.contains(childNode->kind))
+				{
+					return visitor(child);
+				}
+				childNode->match_any(kinds, visitor);
+			}
+			return std::vector<Child>{child};
+		});
 	}
 
 	void match(const std::string &kind, Visitor &visitor)

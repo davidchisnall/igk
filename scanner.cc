@@ -887,6 +887,12 @@ class LuaPass : public TextPass
 		    TextTree &textTree, std::string kind, TextTree::Visitor &&visitor) {
 			  return textTree.match(kind, visitor);
 		  },
+		  "match_any",
+		  [](TextTree                       &textTree,
+		     std::unordered_set<std::string> kinds,
+		     TextTree::Visitor             &&visitor) {
+			  return textTree.match_any(kinds, visitor);
+		  },
 		  "is_empty",
 		  &TextTree::is_empty,
 		  "children",
