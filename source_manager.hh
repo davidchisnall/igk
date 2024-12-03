@@ -161,6 +161,8 @@ class SourceManager
 		}
 	};
 
+	SourceManager(SourceManager&) = delete;
+
 	private:
 	/**
 	 * Source locations that could not be compressed.  These are stored in full
@@ -181,9 +183,12 @@ class SourceManager
 	{
 		return uncompressedLocations.at(index);
 	}
-	friend class SourceManager;
 
 	public:
+
+	SourceManager() = default;
+
+
 	std::pair<size_t, const std::string &> add_file(std::string   name,
 	                                                std::string &&contents)
 	{
