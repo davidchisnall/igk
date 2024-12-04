@@ -378,29 +378,25 @@ namespace
 				String spelling = clang_getCursorSpelling(declaration);
 				addToken("FunctionName", spelling);
 				tree->attribute_set("code-declaration-entity", spelling);
-				if (clang_getCursorKind(declaration) == CXCursor_FunctionDecl)
+				addToken("Punctuation", "(");
+				for (int i = 0; i < clang_Cursor_getNumArguments(declaration);
+				     i++)
 				{
-					addToken("Punctuation", "(");
-					for (int i = 0;
-					     i < clang_Cursor_getNumArguments(declaration);
-					     i++)
+					CXCursor argument =
+					  clang_Cursor_getArgument(declaration, i);
+					CXType argumentType     = clang_getCursorType(argument);
+					auto   argumentTypeName = typeSpelling(argumentType);
+					String argumentName     = clang_getCursorSpelling(argument);
+					addToken("TypeRef", argumentTypeName);
+					functionTree->append_text(" ");
+					addToken("ParamName", argumentName);
+					if (i < clang_Cursor_getNumArguments(declaration) - 1)
 					{
-						CXCursor argument =
-						  clang_Cursor_getArgument(declaration, i);
-						CXType argumentType     = clang_getCursorType(argument);
-						auto   argumentTypeName = typeSpelling(argumentType);
-						String argumentName = clang_getCursorSpelling(argument);
-						addToken("TypeRef", argumentTypeName);
+						addToken("Punctuation", ",");
 						functionTree->append_text(" ");
-						addToken("ParamName", argumentName);
-						if (i < clang_Cursor_getNumArguments(declaration) - 1)
-						{
-							addToken("Punctuation", ",");
-							functionTree->append_text(" ");
-						}
 					}
-					addToken("Punctuation", ")");
 				}
+				addToken("Punctuation", ")");
 			}
 			else if (clang_getCursorKind(declaration) ==
 			         CXCursor_MacroDefinition)
@@ -574,8 +570,7 @@ namespace
 			{
 				CXSourceRange    range = clang_getCursorExtent(declaration);
 				CXSourceLocation start = clang_getRangeStart(range);
-				CXFile           file;
-				String printed = clang_getCursorPrettyPrinted(declaration, 0);
+				CXFile file;
 				clang_getExpansionLocation(
 				  start, &file, nullptr, nullptr, nullptr);
 				auto declarationTree =
