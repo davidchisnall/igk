@@ -887,15 +887,14 @@ class LuaPass : public TextPass
 		                   sol::lib::io,
 		                   sol::lib::table,
 		                   sol::lib::string);
-		lua.new_usertype<TextPass>(
-		  "TextPass",
-		  sol::no_constructor,
-		  "process",
-		  &TextPass::process,
-		  "as_output_pass",
-		  [](TextPass &pass) -> OutputPass * {
-			  return dynamic_cast<OutputPass *>(&pass);
-		  });
+		lua.new_usertype<TextPass>("TextPass",
+		                           sol::no_constructor,
+		                           "process",
+		                           &TextPass::process,
+		                           "as_output_pass",
+		                           [](TextPass &pass) -> OutputPass * {
+			                           return dynamic_cast<OutputPass *>(&pass);
+		                           });
 		lua.new_usertype<OutputPass>("OutputPass",
 		                             "output_file",
 		                             &OutputPass::output_file,
@@ -953,6 +952,11 @@ class LuaPass : public TextPass
 		  &TextTree::extract_children,
 		  "append_text",
 		  &TextTree::append_text,
+		  "insert_text",
+		  [](TextTree &textTree, size_t index, const std::string &text) {
+			  // Convert from Lua 1-based index to C++ 0-based index.
+			  textTree.insert_text(index - 1, text);
+		  },
 		  "split_at_byte_index",
 		  [](TextTree &textTree,
 		     size_t    index) -> std::array<TextTree::Child, 2> {

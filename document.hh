@@ -313,6 +313,23 @@ class TextTree : public std::enable_shared_from_this<TextTree>
 		}
 	}
 
+	void insert_text(size_t index, const std::string &text)
+	{
+		if (index >= children.size())
+		{
+			append_text(text);
+			return;
+		}
+		if (std::holds_alternative<std::string>(children[index]))
+		{
+			std::get<std::string>(children[index]).insert(0, text);
+		}
+		else
+		{
+			children.insert(children.begin() + index, text);
+		}
+	}
+
 	void remove_child(TextTreePointer child)
 	{
 		for (auto it = children.begin(); it != children.end(); ++it)
