@@ -9,6 +9,7 @@ function visit(textTree)
 	if type(textTree) ~= "string" then
 		textTree:visit(visit)
 		if headingTypes[textTree.kind] then
+			textTree:attribute_set("class", textTree.kind)
 			textTree.kind = headingTypes[textTree.kind]
 		end
 	end
