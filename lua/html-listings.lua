@@ -76,6 +76,7 @@ function visit(textTree)
 			textTree:attribute_erase("label")
 			textTree:attribute_erase("filename")
 			textTree:attribute_erase("caption")
+			textTree:attribute_erase("code-kind")
 			return {div}
 		end
 	end
