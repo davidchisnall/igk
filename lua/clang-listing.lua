@@ -103,7 +103,7 @@ function cleanMarkdown(textTree)
 	if type(textTree) == "string" then
 		local results = {}
 		for line in textTree:gmatch("[^\r\n]+") do
-			local listPrefix = string.gmatch(line, "%s*-")()
+			local listPrefix = string.gmatch(line, "^%s*-")()
 			if listPrefix then
 				line = string.sub(line, #listPrefix + 1)
 			end
@@ -120,7 +120,7 @@ function cleanMarkdown(textTree)
 				table.insert(results, run)
 				start = e + 2
 			end
-			if start < #line then
+			if start <= #line then
 				table.insert(results, string.sub(line, start, #line))
 			end
 			if listPrefix then
