@@ -183,10 +183,8 @@ function visit(textTree)
 			return {}
 		elseif (textTree.kind == "functiondoc") or (textTree.kind == "macrodoc") then
 			local DocumentedKinds = {
-				"functiondoc",
-				"Function",
-				"macrodoc",
-				"Macro",
+				functiondoc = "Function",
+				macrodoc = "Macro",
 			}
 			if not docfile then
 				textTree:error(
