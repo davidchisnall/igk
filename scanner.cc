@@ -876,27 +876,35 @@ class LuaPass : public TextPass
 
 	TextTreePointer process(TextTreePointer tree) override
 	{
-		struct Test
-		{
-			int x;
-			Test(int x) : x(x) {}
-		};
-		lua.new_usertype<Test>(
-		  "Test", "new", sol::constructors<Test(int)>(), "x", &Test::x);
-		lua.new_usertype<TextPass>("Pass",
-		                           "process",
-		                           &TextPass::process,
-		                           "as_output_pass",
-		                           [](TextPass &pass) -> OutputPass * {
-			                           return dynamic_cast<OutputPass *>(&pass);
-		                           });
+		return processFunction(tree);
+	}
+
+	public:
+	LuaPass(std::string filename)
+	{
+		lua.open_libraries(sol::lib::base,
+		                   sol::lib::package,
+		                   sol::lib::io,
+		                   sol::lib::table,
+		                   sol::lib::string);
+		lua.new_usertype<TextPass>(
+		  "TextPass",
+		  sol::no_constructor,
+		  "process",
+		  &TextPass::process,
+		  "as_output_pass",
+		  [](TextPass &pass) -> OutputPass * {
+			  return dynamic_cast<OutputPass *>(&pass);
+		  });
 		lua.new_usertype<OutputPass>("OutputPass",
 		                             "output_file",
 		                             &OutputPass::output_file,
 		                             "output_stderr",
 		                             &OutputPass::output_stderr,
 		                             "output_stdout",
-		                             &OutputPass::output_stdout);
+		                             &OutputPass::output_stdout,
+		                             "process",
+		                             &TextPass::process);
 		sol::usertype<TextTree> textTreeType = lua.new_usertype<TextTree>(
 		  "TextTree",
 		  "new",
@@ -955,13 +963,13 @@ class LuaPass : public TextPass
 		  &TextTree::dump,
 		  "source_file_name",
 		  [](TextTree &textTree) {
-			  auto sm = SourceManager::shared_instance();
+			  auto &sm = SourceManager::shared_instance();
 			  return sm.file_for_id(
 			    sm.expand(textTree.sourceRange.first).fileID);
 		  },
 		  "source_directory_name",
 		  [](TextTree &textTree) {
-			  auto  sm = SourceManager::shared_instance();
+			  auto &sm = SourceManager::shared_instance();
 			  auto &file =
 			    sm.file_for_id(sm.expand(textTree.sourceRange.first).fileID);
 			  std::filesystem::path path = file;
@@ -1011,8 +1019,6 @@ class LuaPass : public TextPass
 		  &TextTree::attribute_set,
 		  "attribute",
 		  &TextTree::attribute);
-		sol::usertype<TextPass> textPassType =
-		  lua.new_usertype<TextPass>("TextPass", "process", &TextPass::process);
 		lua["create_pass"] = &TextPassRegistry::create;
 		lua["config"]      = &config;
 		lua["read_file"]   = [](std::string path) { return read_file(path); };
@@ -1030,17 +1036,6 @@ class LuaPass : public TextPass
 		           "end\n"
 		           "io.stderr:write('\\n')\n"
 		           "end\n");
-		return processFunction(tree);
-	}
-
-	public:
-	LuaPass(std::string filename)
-	{
-		lua.open_libraries(sol::lib::base,
-		                   sol::lib::package,
-		                   sol::lib::io,
-		                   sol::lib::table,
-		                   sol::lib::string);
 		lua.script_file(filename);
 		processFunction = lua["process"];
 	}
