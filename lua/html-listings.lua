@@ -62,9 +62,14 @@ function visit(textTree)
 				textTree:attribute_set("style", "counter-reset: listing-line " .. tostring(tonumber(firstLine) - 1))
 			end
 			textTree:attribute_set("class", class)
-			local label = div:new_child()
-			label.kind = "p"
-			label:attribute_set("id", textTree:attribute("label"))
+			local label = div:new_child("p")
+			if textTree:has_attribute("label") then
+				label:attribute_set("label", textTree:attribute("label"))
+			end
+			if textTree:has_attribute("number") then
+				label:attribute_set("number", textTree:attribute("number"))
+				label:append_text("Listing " .. textTree:attribute("number") .. ". ")
+			end
 			label:attribute_set("class", "listing-caption")
 			label:append_text(textTree:attribute("caption"))
 			local exampleOrigin = label:new_child()
