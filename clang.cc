@@ -486,27 +486,14 @@ namespace
 					  clang_getRange(commentLocation, commentLocation),
 					  &commentTokens,
 					  &commentTokenCount);
-					std::cerr << "\ncomment token count: " << commentTokenCount
-					          << std::endl;
 					String comment =
 					  clang_getTokenSpelling(translationUnit, commentTokens[0]);
-					std::cerr
-					  << "\nToken kind: " << token_kind(commentTokens[0])
-					  << std::endl;
 					std::vector<CXCursor> cursors;
 					cursors.resize(commentTokenCount);
 					clang_annotateTokens(translationUnit,
 					                     commentTokens,
 					                     commentTokenCount,
 					                     cursors.data());
-					std::cerr
-					  << "\\Cursor kind: "
-					  << (std::string_view)(String)clang_getCursorKindSpelling(
-					       clang_getCursorKind(cursors[0]))
-					  << std::endl;
-					std::cerr
-					  << "\ncomment token: " << (std::string_view)comment
-					  << std::endl;
 					if (clang_getTokenKind(commentTokens[0]) == CXToken_Comment)
 					{
 						commentFound = true;
@@ -551,6 +538,14 @@ namespace
 								{
 									line = line.substr(2);
 								}
+								// If this is a single asterisk with no space
+								// after it, skip it.
+								if (line == "*")
+								{
+									commentTree = tree->new_child();
+									commentTree->kind = "p";
+									continue;
+								}
 							}
 							// If we're at the end, remove trailing */
 							if (line.ends_with("*/"))
@@ -558,7 +553,7 @@ namespace
 								line = line.substr(0, line.size() - 2);
 							}
 							commentTree->append_text(line);
-							commentTree->append_text("\n");
+							commentTree->append_text(" \n");
 						}
 					}
 				}
