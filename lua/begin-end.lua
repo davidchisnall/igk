@@ -12,7 +12,7 @@ function findBegins(textTree)
 end
 
 local beginDepth = 0
-local beginNames = {}
+local begin = nil
 local squashedNodes = {}
 
 function squashBegins(textTree)
@@ -20,29 +20,28 @@ function squashBegins(textTree)
 		if textTree.kind == "begin" then
 			beginDepth = beginDepth+1
 			if beginDepth == 1 then
-				table.insert(beginNames, textTree.children[1])
-				return {}
+				begin = textTree
+				textTree.kind = textTree:text()
+				textTree:clear()
+				return {begin}
 			end
 		end
 		if textTree.kind == "end" then
-			local name = beginNames[#beginNames]
-			table.remove(beginNames)
 			beginDepth = beginDepth-1
 			if beginDepth == 0 then
-				if not textTree.children[1] == name then
+				if not textTree:text() == begin.kind then
 					textTree:error("Mismatched begin and end!")
 				end
-				textTree.kind = textTree.children[1]
-				textTree:clear()
 				for i, node in ipairs(squashedNodes) do
 					if (type(node) == "string") then
-						textTree:append_text(node)
+						begin:append_text(node)
 					else
-						textTree:append_child(node)
+						begin:append_child(node)
 					end
 				end
 				squashedNodes = {}
-				return {textTree}
+				begin = nil
+				return {} 
 			end
 		end
 	end
@@ -58,8 +57,13 @@ function process(textTree)
 	for _, node in ipairs(beginNodes) do
 		beginDepth = 0
 		squashedNodes = {}
-		if node:parent() then
-			node:parent():visit(squashBegins)
+		begin = nil
+		-- The visit function will squash every top-level begin-end pair in the
+		-- same scope, so we can skip nodes that we've already rewritten
+		if node.kind == "begin" then
+			if node:parent() then
+				node:parent():visit(squashBegins)
+			end
 		end
 	end
 	return textTree
