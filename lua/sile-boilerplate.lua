@@ -11,6 +11,12 @@ function process(textTree)
 	addUse("labelrefs")
 	addUse("ptable")
 	addUse("framebox")
+	if config.sile_packages then
+		for package in string.gmatch(config.sile_packages, "([^;]+)") do
+			print("Adding package from config:", package)
+			addUse(package)
+		end
+	end
 	document:attribute_set("class", "resilient.book")
 	document:attribute_set("layout", "division 9")
 	document:attribute_set("papersize", "6in x 9in")
