@@ -97,21 +97,9 @@ function visitCode(textTree)
 	textTree:append_text("\n")
 	textTree:append_text("\n")
 	if textTree:has_attribute("caption") then
-		local caption = textTree:new_child("center")
-		caption:append_text("Listing ")
-		local counter = caption:new_child("show-counter")
-		counter:attribute_set("id", "listing")
-		caption:append_text(". ")
+		local caption = textTree:new_child("listingcaption")
 		if textTree:has_attribute("label") then
-			local label = caption:new_child("refentry")
-			label:attribute_set("marker", textTree:attribute("label"))
-			if not textTree:has_attribute("number") then
-				textTree:error("Missing number attribute")
-			end
-			label:attribute_set("number", textTree:attribute("number"))
-			label:attribute_set("section", textTree:attribute("number"))
-			label:append_text(textTree:attribute("number"))
-			textTree:attribute_set("type", "listing")
+			caption:attribute_set("marker", textTree:attribute("label"))
 		end
 		caption:append_text(textTree:attribute("caption"))
 	end
