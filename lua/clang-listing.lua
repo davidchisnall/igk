@@ -102,8 +102,9 @@ local listNode = nil
 function cleanMarkdown(textTree)
 	if type(textTree) == "string" then
 		local results = {}
+		local item = nil
 		for line in textTree:gmatch("[^\r\n]+") do
-			local listPrefix = string.gmatch(line, "^%s*-")()
+			local listPrefix = line:match("^%s*-")
 			if listPrefix then
 				line = string.sub(line, #listPrefix + 1)
 			end
@@ -127,7 +128,9 @@ function cleanMarkdown(textTree)
 				if listNode == nil then
 					listNode = TextTree.new("itemize")
 				end
-				local item = TextTree.new("item")
+				item = TextTree.new("item")
+			end
+				if item then
 				listNode:append_child(item)
 				for _, r in pairs(results) do
 					if type(r) == "string" then
@@ -137,17 +140,16 @@ function cleanMarkdown(textTree)
 					end
 				end
 				results = {}
-			else
-				if listNode then
-					table.insert(results, 1, listNode)
-					listNode = nil
-				end
 			end
 		end
 		return results
 	else
 		if textTree.kind == "p" then
 			textTree:visit(cleanMarkdown)
+			-- Discard empty paragraphs.
+			if #textTree:text() == 0 then
+				textTree = nil
+			end
 		end
 		if listNode then
 			local ret = { listNode, textTree }

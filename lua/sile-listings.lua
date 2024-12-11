@@ -62,7 +62,6 @@ function visitClangDoc(textTree)
 	textTree:attribute_erase("code-declaration-entity")
 	textTree:attribute_erase("code-declaration-kind")
 	center.children[1].children[1]:take_children(textTree)
-	center.children[1].children[1]:take_children(textTree)
 	return { center }
 end
 
