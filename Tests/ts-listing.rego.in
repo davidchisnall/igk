@@ -1,0 +1,1 @@
+\regolisting[marker=foo,caption=Example of a rego thing,label=lst:example, filename=includes/test.rego]{}

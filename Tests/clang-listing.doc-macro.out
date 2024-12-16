@@ -1,6 +1,6 @@
 
 
-\clang-doc[code-declaration-entity=MACRO,code-declaration-kind=macro]{\code[code-kind=listing]{\code-run[token-kind=MacroName]{MACRO}}\p{ This is a macro}}
+\clang-doc[code-declaration-entity=MACRO,code-declaration-kind=macro]{\code[code-kind=listing]{\code-run[token-kind=MacroName]{MACRO}}\p{ This is a macro }}
 
-\clang-doc[code-declaration-entity=MACRO_ARG,code-declaration-kind=macro]{\code[code-kind=listing]{\code-run[token-kind=MacroName]{MACRO_ARG}\code-run[token-kind=Punctuation]{(}\code-run[token-kind=Identifier]{x}\code-run[token-kind=Punctuation]{,}\code-run[token-kind=Identifier]{y}\code-run[token-kind=Punctuation]{,}\code-run[token-kind=Identifier]{z}\code-run[token-kind=Punctuation]{)}}\p{This is a macro with an argument}}
+\clang-doc[code-declaration-entity=MACRO_ARG,code-declaration-kind=macro]{\code[code-kind=listing]{\code-run[token-kind=MacroName]{MACRO_ARG}\code-run[token-kind=Punctuation]{(}\code-run[token-kind=Identifier]{x}\code-run[token-kind=Punctuation]{,}\code-run[token-kind=Identifier]{y}\code-run[token-kind=Punctuation]{,}\code-run[token-kind=Identifier]{z}\code-run[token-kind=Punctuation]{)}}\p{ This is a macro with an argument  }}
 

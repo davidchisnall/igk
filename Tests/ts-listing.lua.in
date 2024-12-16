@@ -1,0 +1,1 @@
+\lualisting[marker=foo,caption=Example of a lua thing,label=lst:example, filename=includes/test.lua]{}

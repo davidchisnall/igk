@@ -1,0 +1,7 @@
+\code[label=lst:example,filename=includes/test.lua,caption=Example of a lua thing,first-line=2]{\code-run[token-kind=Comment]{-- foo#begin}
+    \code-run[token-kind=Keyword]{local} \code-run[token-kind=Identifier]{x} \code-run[token-kind=Punctuation]{=} \code-run[token-kind=String]{"some string"}
+    \code-run[token-kind=Comment]{-- y should be 42}
+    \code-run[token-kind=Identifier]{y} \code-run[token-kind=Punctuation]{=} \code-run[token-kind=Number]{42}
+    \code-run[token-kind=Comment]{-- Call a method}
+    \code-run[token-kind=MethodCall]{argument}\code-run[token-kind=Punctuation]{:}\code-run[token-kind=MethodCall]{plibs}\code-run[token-kind=Punctuation]{(}\code-run[token-kind=Number]{42}\code-run[token-kind=Punctuation]{,} \code-run[token-kind=Argument]{x}\code-run[token-kind=Punctuation]{)}
+    \code-run[token-kind=FunctionCall]{foo}\code-run[token-kind=Punctuation]{(}\code-run[token-kind=Argument]{arg1}\code-run[token-kind=Punctuation]{,} \code-run[token-kind=Argument]{arg2}\code-run[token-kind=Punctuation]{)}}
