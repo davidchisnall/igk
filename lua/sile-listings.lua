@@ -6,10 +6,13 @@ local colours = {
 	TypeRef = "#0000FF",
 	DeclRef = "#00a000",
 	FunctionName = "#00a000",
+	RuleHead = "#00a000",
 	MacroName = "#bb0000",
 	MacroInstantiation = "#bb0000",
 	ParamName = "#00a000",
 	Literal = "#a00000",
+	String = "#a00000",
+	Number = "#a00000",
 	Keyword = "#ff0000",
 	Comment = "#008000",
 	Identifier = "#000000",
@@ -19,7 +22,7 @@ function visitCodeRuns(textTree)
 	textTree.kind = "color"
 	local kind = textTree:has_attribute("token-kind") and textTree:attribute("token-kind") or "Identifier"
 	textTree:attribute_erase("token-kind")
-	textTree:attribute_set("color", colours[kind])
+	textTree:attribute_set("color", colours[kind] or colours.Identifier)
 	return { textTree }
 end
 
