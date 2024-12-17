@@ -30,7 +30,6 @@ function handleListing(textTree)
 	elseif textTree.kind == "regolisting" then
 		builder = RegoTextBuilder.new()
 	end
-	print("Builder:", builder)
 	local code = builder:find_code(content, textTree:attribute("marker"))
 	if textTree:has_attribute("caption") then
 		code:attribute_set("caption", textTree:attribute("caption"))

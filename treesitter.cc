@@ -94,7 +94,7 @@ class TreeSitterTextBuilder
 				currentIdentifierKind.pop_back();
 				continue;
 			}
-			if (kind == "identifier")
+			if (LanguageTraits::idenfitierKinds.contains(kind))
 			{
 				if (currentIdentifierKind.empty())
 				{
@@ -182,6 +182,8 @@ struct LuaTraits
 	   {"method_index_expression", "MethodCall"},
 	   {"function_call", "FunctionCall"},
 	   {"number", "Number"}};
+	static inline const std::unordered_set<std::string> idenfitierKinds = {
+	  "identifier"};
 	static auto create_language()
 	{
 		return tree_sitter_lua();
@@ -204,12 +206,12 @@ struct RegoTraits
 	  "close_bracket",
 	  "open_paren",
 	  "close_paren",
-	  "rule_head",
-	  "var",
 	  "import",
 	  "number"};
 	static inline const std::unordered_set<std::string> tokenInfoKinds = {
 	  "method_index_expression",
+	  "rule_head",
+	  "rule_args",
 	  "arguments",
 	  "function_call"};
 	static inline const std::unordered_map<std::string, std::string> kindNames =
@@ -218,6 +220,7 @@ struct RegoTraits
 	   {"import", "keyword"},
 	   {"rule_head", "RuleHead"},
 	   {"string", "String"},
+	   {"rule_args", "ParamName"},
 	   {"open_paren", "Punctuation"},
 	   {"close_paren", "Punctuation"},
 	   {"open_curly", "Punctuation"},
@@ -225,8 +228,9 @@ struct RegoTraits
 	   {"open_bracket", "Punctuation"},
 	   {"close_bracket", "Punctuation"},
 	   {"close_bracket", "Punctuation"},
-	   {"var", "Identifier"},
 	   {"number", "Number"}};
+	static inline const std::unordered_set<std::string> idenfitierKinds = {
+	  "var"};
 	static auto create_language()
 	{
 		return tree_sitter_rego();
