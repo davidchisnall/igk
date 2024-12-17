@@ -1,0 +1,14 @@
+\code[label=lst:example,filename=includes/test.rego,caption=Example of a rego thing,first-line=4]{\code-run[token-kind=Keyword]{package} \code-run[token-kind=Identifier]{network_stack}
+
+\code-run[token-kind=Keyword]{import} \code-run[token-kind=Identifier]{future}\code-run[token-kind=Punctuation]{.}\code-run[token-kind=Identifier]{keywords}\code-run[token-kind=Punctuation]{.}\code-run[token-kind=Identifier]{every}
+
+\code-run[token-kind=RuleHead]{connection_types}\code-run[token-kind=Identifier]{} = \code-run[token-kind=Punctuation]{[}\code-run[token-kind=String]{"TCP"}\code-run[token-kind=Punctuation]{,} \code-run[token-kind=String]{"UDP"}\code-run[token-kind=Punctuation]{]}
+
+\code-run[token-kind=Comment]{# Evaluates to true if this is a connection capability.  This does not check}
+\code-run[token-kind=Comment]{# whether it is a *valid* connection capability, only that it is a sealed}
+\code-run[token-kind=Comment]{# object of the correct kind.}
+\code-run[token-kind=RuleHead]{is_connection_capability}\code-run[token-kind=Punctuation]{(}\code-run[token-kind=ParamName]{connection}\code-run[token-kind=Punctuation]{)} \code-run[token-kind=Punctuation]{{}
+	\code-run[token-kind=Identifier]{connection}\code-run[token-kind=Punctuation]{.}\code-run[token-kind=Identifier]{kind} \code-run[token-kind=Punctuation]{==} \code-run[token-kind=String]{"SealedObject"}\code-run[token-kind=Keyword]{
+}	\code-run[token-kind=Identifier]{connection}\code-run[token-kind=Punctuation]{.}\code-run[token-kind=Identifier]{sealing_type}\code-run[token-kind=Punctuation]{.}\code-run[token-kind=Identifier]{compartment} \code-run[token-kind=Punctuation]{==} \code-run[token-kind=String]{"NetAPI"}\code-run[token-kind=Keyword]{
+}	\code-run[token-kind=Identifier]{connection}\code-run[token-kind=Punctuation]{.}\code-run[token-kind=Identifier]{sealing_type}\code-run[token-kind=Punctuation]{.}\code-run[token-kind=Identifier]{key} \code-run[token-kind=Punctuation]{==} \code-run[token-kind=String]{"NetworkConnectionKey"}\code-run[token-kind=Keyword]{
+}\code-run[token-kind=Punctuation]{\}}}
