@@ -54,6 +54,7 @@ class TreeSitterTextBuilder
 				{
 					firstLine = ts_node_end_point(node).row + 1;
 					print     = true;
+					continue;
 				}
 				if (text.contains(endMarker))
 				{
