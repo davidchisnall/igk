@@ -742,7 +742,7 @@ class XHTMLOutputPass : public OutputPass
 					  child->const_visit(
 					    [this](auto node) { return visitor(node); });
 					  if (!child->kind.empty() &&
-					      !VoidTags.contains(child->kind))
+					      (XMLTags || !VoidTags.contains(child->kind)))
 					  {
 						  out() << "</" << child->kind << '>';
 					  }
