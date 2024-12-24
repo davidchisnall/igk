@@ -1,17 +1,22 @@
--- FIXME: Don't hard code these paths.
-local arguments = {
+local defaultArguments = {
 	"c++",
 	"-std=c++17",
 	"-I/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/c++/v1",
 	"-I/Library/Developer/CommandLineTools/usr/lib/clang/15.0.0/include",
 	"-I/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include",
 }
+local languageArguments = {}
 
 local parsedFiles = {}
 
+function arguments_for_file(fileName)
+	local suffix = string.match(fileName, "%..*$")
+	return languageArguments[suffix] or defaultArguments
+end
+
 function parse_file(fileName)
 	if parsedFiles[fileName] == nil then
-		parsedFiles[fileName] = ClangTextBuilder.new(fileName, arguments)
+		parsedFiles[fileName] = ClangTextBuilder.new(fileName, arguments_for_file(fileName))
 	end
 	return parsedFiles[fileName]
 end
@@ -79,7 +84,7 @@ function handleCodeListing(textTree)
 	end
 	local fileName = resolve_relative_path(textTree, textTree:attribute("filename"))
 
-	local clang = ClangTextBuilder.new(fileName, arguments)
+	local clang = ClangTextBuilder.new(fileName, arguments_for_file(fileName))
 	local lineRange = lines_from(textTree, fileName, textTree:attribute("marker"))
 	if not lineRange then
 		return { textTree }
@@ -173,15 +178,20 @@ function visit(textTree)
 			if not argsFile then
 				textTree:error("Unable to open compile flags file: " .. argsFileName)
 			end
-			arguments = {}
+			local arguments = {}
 			for line in argsFile:lines() do
 				arguments[#arguments + 1] = line
+			end
+			if textTree:has_attribute("extension") then
+				languageArguments[textTree:attribute("extension")] = arguments
+			else
+				defaultArguments = arguments
 			end
 			argsFile:close()
 			return {}
 		elseif textTree.kind == "docfile" then
 			local docfileName = resolve_relative_path(textTree, textTree.children[1])
-			docfile = ClangTextBuilder.new(docfileName, arguments)
+			docfile = ClangTextBuilder.new(docfileName, arguments_for_file(docfileName))
 			return {}
 		elseif (textTree.kind == "functiondoc") or (textTree.kind == "macrodoc") then
 			local DocumentedKinds = {
