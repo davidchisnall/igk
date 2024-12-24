@@ -485,6 +485,16 @@ class TeXStyleScanner
 					// the next one.
 					stream.consume(U',');
 				}
+				else if (!stream.consume(U',') && (stream.peek() != U']'))
+				{
+					SourceManager::shared_instance().report_error(
+					  current_location(),
+					  current_location(),
+					  "Unexpected value parsing arguments",
+					  SourceManager::Severity::Fatal);
+					throw std::logic_error(
+					  "Unexpected value parsing arguments");
+				}
 				handler.command_argument(
 				  {argumentStart, current_location()}, argumentName, value);
 			} while (!stream.consume(U']'));
