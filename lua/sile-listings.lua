@@ -98,12 +98,19 @@ function visitCode(textTree)
 	textTree:new_child("break")
 	textTree:append_text("\n")
 	textTree:append_text("\n")
+	local caption = nil
 	if textTree:has_attribute("caption") then
-		local caption = textTree:new_child("listingcaption")
+		caption = TextTree.new("listingcaption")
 		if textTree:has_attribute("label") then
 			caption:attribute_set("marker", textTree:attribute("label"))
 		end
 		caption:append_text(textTree:attribute("caption"))
+		caption:new_child("goodbreak")
+		if textTree:has_attribute("filename") then
+			local from = caption:new_child("font")
+			from:attribute_set("size", "0.8em")
+			from:append_text(" [ from: " .. textTree:attribute("filename") .. " ]")
+		end
 	end
 	--if textTree:has_attribute("first-line") then
 	textTree:attribute_erase("label")
@@ -111,6 +118,9 @@ function visitCode(textTree)
 	textTree:attribute_erase("caption")
 	textTree:attribute_erase("first-line")
 	textTree:attribute_erase("code-kind")
+	if caption then
+		return { textTree, caption }
+	end
 	return { textTree }
 end
 
