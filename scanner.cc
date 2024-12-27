@@ -345,6 +345,20 @@ class TeXStyleScanner
 		return stream.token();
 	}
 
+	std::string read_command()
+	{
+		if (!stream.isalnum())
+		{
+			return "";
+		}
+		while (!(stream.isspace() || (stream.peek() == U'[') ||
+		         (stream.peek() == U'{')))
+		{
+			stream.next();
+		}
+		return stream.token();
+	}
+
 	void skip_comments()
 	{
 		while (stream.peek() == U'%')
@@ -441,7 +455,7 @@ class TeXStyleScanner
 	void scan_command()
 	{
 		SourceLocation start   = current_location();
-		std::string    command = read_word();
+		std::string    command = read_command();
 		handler.command_start({start, current_location()}, command);
 		if (stream.consume(U'['))
 		{
