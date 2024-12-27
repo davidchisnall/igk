@@ -1129,7 +1129,9 @@ int main(int argc, char *argv[])
 	};
 
 	CLI::App app;
-	app.add_option("--config")->each(registerConfigOption);
+	app.add_option("--config")
+	  ->multi_option_policy(CLI::MultiOptionPolicy::TakeAll)
+	  ->each(registerConfigOption);
 	app
 	  .add_option(
 	    "--lua-directory",
