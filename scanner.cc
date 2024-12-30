@@ -972,6 +972,8 @@ class LuaPass : public TextPass
 		    }),
 		  "append_child",
 		  &TextTree::append_child,
+		  "remove_child",
+		  &TextTree::remove_child,
 		  "extract_children",
 		  &TextTree::extract_children,
 		  "append_text",

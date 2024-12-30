@@ -31,6 +31,10 @@ function visitClangDoc(textTree)
 		kind = "center",
 		children = {
 			{
+				kind = "skip",
+				attributes = { height = "0.3em" },
+			},
+			{
 				kind = "framebox",
 				attributes = { shadow = true },
 				children = {
@@ -39,8 +43,12 @@ function visitClangDoc(textTree)
 						attributes = {
 							valign = "middle",
 							width = "90%fw",
+							padding = "1em",
 						},
 						children = {
+							{
+								kind = "noindent",
+							},
 							{
 								kind = "font",
 								attributes = { weight = 900 },
@@ -48,7 +56,7 @@ function visitClangDoc(textTree)
 									"Documentation for the ",
 									{
 										kind = "font",
-										attributes = { family = "Hack" },
+										attributes = { family = "Hack", size = "0.8em" },
 										children = {
 											textTree:attribute("code-declaration-entity"),
 										},
@@ -56,15 +64,51 @@ function visitClangDoc(textTree)
 									" " .. textTree:attribute("code-declaration-kind"),
 								},
 							},
+							{
+								kind = "skip",
+								attributes = { height = "0.3em" },
+							},
 						},
 					},
 				},
 			},
+			{
+				kind = "skip",
+				attributes = { height = "0.3em" },
+			},
 		},
 	})
-	textTree:attribute_erase("code-declaration-entity")
-	textTree:attribute_erase("code-declaration-kind")
-	center.children[1].children[1]:take_children(textTree)
+	-- Add a noindent at the start and some vertical spacing at the end of each
+	-- paragraph or code block.
+	local lastSkip = nil
+	textTree:match_any({ "code", "p" }, function(p)
+		local noindent = TextTree.new("noindent")
+		local skip = TextTree.new("skip")
+		skip:attribute_set("height", "0.5em")
+		lastSkip = skip
+		return { noindent, p, skip }
+	end)
+	-- Remove a trailing vertical skip.
+	if lastSkip then
+		textTree:remove_child(lastSkip)
+	end
+	-- Visit the code block first so that we don't make it small twice.
+	textTree:match("code", visitCode)
+
+	-- Visit each inline code block so that we make it the correct font before
+	-- we make it the correct colour.
+	textTree:match("code-run", function(codeRun)
+		codeRun = visitCodeRuns(codeRun)[1]
+		local code = TextTree.new("font")
+		code:attribute_set("family", "Hack")
+		code:attribute_set("size", "0.8em")
+		code:append_child(codeRun)
+		return { code }
+	end)
+
+	-- Move all of the children of the text tree into the parbox in the
+	-- framebox in the center.
+	center.children[2].children[1]:take_children(textTree)
 	return { center }
 end
 
@@ -105,19 +149,18 @@ function visitCode(textTree)
 			caption:attribute_set("marker", textTree:attribute("label"))
 		end
 		caption:append_text(textTree:attribute("caption"))
-		caption:new_child("goodbreak")
 		if textTree:has_attribute("filename") then
 			local from = caption:new_child("font")
 			from:attribute_set("size", "0.8em")
 			from:append_text(" [ from: " .. textTree:attribute("filename") .. " ]")
 		end
 	end
-	--if textTree:has_attribute("first-line") then
 	textTree:attribute_erase("label")
 	textTree:attribute_erase("filename")
 	textTree:attribute_erase("caption")
 	textTree:attribute_erase("first-line")
 	textTree:attribute_erase("code-kind")
+	textTree:match("code-run", visitCodeRuns)
 	if caption then
 		return { textTree, caption }
 	end
@@ -127,6 +170,10 @@ end
 function process(textTree)
 	textTree:match("clang-doc", visitClangDoc)
 	textTree:match("code", visitCode)
-	textTree:match("code-run", visitCodeRuns)
+	-- Uncomment for debugging
+	--textTree:match("code-run", function(tree)
+		--tree:error("code run should have been removed already")
+		--return {tree}
+	--end)
 	return textTree
 end
