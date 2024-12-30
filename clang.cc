@@ -98,12 +98,13 @@ namespace
 		std::vector<std::string>
 		usrs_for_function(const std::string &functionName)
 		{
-			auto usrs = usrs_for_entity(functionName, CXCursor_FunctionDecl);
-			if (!usrs.empty())
-			{
-				return usrs;
-			}
-			return usrs_for_entity(functionName, CXCursor_FunctionTemplate);
+			auto functionUSRs =
+			  usrs_for_entity(functionName, CXCursor_FunctionDecl);
+			auto templateUSRs =
+			  usrs_for_entity(functionName, CXCursor_FunctionTemplate);
+			functionUSRs.insert(
+			  functionUSRs.begin(), templateUSRs.begin(), templateUSRs.end());
+			return functionUSRs;
 		}
 
 		std::vector<std::string> usrs_for_macro(const std::string &macroName)
@@ -146,7 +147,8 @@ namespace
 		TextTreePointer build_source_range(std::string      fileName,
 		                                   CXSourceLocation startLocation,
 		                                   CXSourceLocation endLocation,
-		                                   bool skipTrailingLine = false)
+		                                   bool skipTrailingLine = false,
+		                                   bool stopAtBrace      = false)
 		{
 			unsigned start, end;
 			clang_getExpansionLocation(
@@ -199,6 +201,10 @@ namespace
 				  cursorEnd, nullptr, nullptr, nullptr, &endOffset);
 				String spelling =
 				  clang_getTokenSpelling(translationUnit, token);
+				if (stopAtBrace && (cursor.kind == CXCursor_CompoundStmt))
+				{
+					break;
+				}
 				// If we've gone past the end of the range, stop.  We will scan
 				// up to the line with the end on it, to make sure that we get
 				// the last token.
@@ -542,7 +548,7 @@ namespace
 								// after it, skip it.
 								if (line == "*")
 								{
-									commentTree = tree->new_child();
+									commentTree       = tree->new_child();
 									commentTree->kind = "p";
 									continue;
 								}
@@ -565,13 +571,15 @@ namespace
 			{
 				CXSourceRange    range = clang_getCursorExtent(declaration);
 				CXSourceLocation start = clang_getRangeStart(range);
-				CXFile file;
+				CXFile           file;
 				clang_getExpansionLocation(
 				  start, &file, nullptr, nullptr, nullptr);
 				auto declarationTree =
 				  build_source_range(String{clang_getFileName(file)},
 				                     start,
-				                     clang_getRangeEnd(range));
+				                     clang_getRangeEnd(range),
+				                     false,
+				                     true);
 				tree->append_child(declarationTree);
 				if (clang_getCursorKind(declaration) ==
 				    CXCursor_FunctionTemplate)
