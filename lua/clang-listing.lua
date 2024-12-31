@@ -9,16 +9,34 @@ local languageArguments = {}
 
 local parsedFiles = {}
 
+function compare_arguments(argsA, argsB)
+	if #argsA ~= #argsB then
+		return false
+	end
+	for i, v in ipairs(argsA) do
+		if v ~= argsB[i] then
+			print(i, v, "~=", argsB[i])
+			return false
+		end
+	end
+	return true
+end
+
 function arguments_for_file(fileName)
 	local suffix = string.match(fileName, "%..*$")
 	return languageArguments[suffix] or defaultArguments
 end
 
-function parse_file(fileName)
+function parse_file(fileName, arguments)
 	if parsedFiles[fileName] == nil then
-		parsedFiles[fileName] = ClangTextBuilder.new(fileName, arguments_for_file(fileName))
+		parsedFiles[fileName] = { file = ClangTextBuilder.new(fileName, arguments), arguments = arguments }
+		return parsedFiles[fileName].file
 	end
-	return parsedFiles[fileName]
+	if compare_arguments(arguments, parsedFiles[fileName].arguments) then
+		return parsedFiles[fileName].file
+	end
+	parsedFiles[fileName] = { file = ClangTextBuilder.new(fileName, arguments), arguments = arguments }
+	return parsedFiles[fileName].file
 end
 
 function file_exists(file)
@@ -84,7 +102,7 @@ function handleCodeListing(textTree)
 	end
 	local fileName = resolve_relative_path(textTree, textTree:attribute("filename"))
 
-	local clang = ClangTextBuilder.new(fileName, arguments_for_file(fileName))
+	local clang = parse_file(fileName, arguments_for_file(fileName))
 	local lineRange = lines_from(textTree, fileName, textTree:attribute("marker"))
 	if not lineRange then
 		return { textTree }
@@ -135,7 +153,7 @@ function cleanMarkdown(textTree)
 				end
 				item = TextTree.new("item")
 			end
-				if item then
+			if item then
 				listNode:append_child(item)
 				for _, r in pairs(results) do
 					if type(r) == "string" then
@@ -191,7 +209,7 @@ function visit(textTree)
 			return {}
 		elseif textTree.kind == "docfile" then
 			local docfileName = resolve_relative_path(textTree, textTree.children[1])
-			docfile = ClangTextBuilder.new(docfileName, arguments_for_file(docfileName))
+			docfile = parse_file(docfileName, arguments_for_file(docfileName))
 			return {}
 		elseif (textTree.kind == "functiondoc") or (textTree.kind == "macrodoc") then
 			local DocumentedKinds = {
