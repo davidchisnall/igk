@@ -49,7 +49,7 @@ end
 
 function lines_from(textTree, file, marker)
 	if not file_exists(file) then
-		textTree:error("File not found: " .. file)
+		textTree:fatal_error("File not found: " .. file)
 		return nil
 	end
 	local lines = {}
@@ -64,11 +64,11 @@ function lines_from(textTree, file, marker)
 		i = i + 1
 	end
 	if (not lines.start) or not lines.finish then
-		textTree:error("Marker '" .. marker .. "'not found in file: " .. file)
+		textTree:fatal_error("Marker '" .. marker .. "' not found in file: " .. file)
 		return nil
 	end
 	if lines.start >= lines.finish then
-		textTree:error("Marker '" .. marker .. "' is not valid in file: " .. file)
+		textTree:fatal_error("Marker '" .. marker .. "' is not valid in file: " .. file)
 		return nil
 	end
 	return lines
@@ -76,7 +76,7 @@ end
 
 function check_attribute(textTree, attribute)
 	if not textTree:has_attribute(attribute) then
-		textTree:error("Missing attribute: " .. attribute)
+		textTree:fatal_error("Missing attribute: " .. attribute)
 		return false
 	end
 	return true
@@ -194,7 +194,7 @@ function visit(textTree)
 			local argsFileName = resolve_relative_path(textTree, textTree.children[1])
 			local argsFile = io.open(argsFileName, "rb")
 			if not argsFile then
-				textTree:error("Unable to open compile flags file: " .. argsFileName)
+				textTree:fatal_error("Unable to open compile flags file: " .. argsFileName)
 			end
 			local arguments = {}
 			for line in argsFile:lines() do
@@ -217,7 +217,7 @@ function visit(textTree)
 				macrodoc = "Macro",
 			}
 			if not docfile then
-				textTree:error(
+				textTree:fatal_error(
 					"Clang documentation directives must be preceded by a \\docfile{} instruction giving the source file to parse"
 				)
 				return { textTree }
@@ -231,11 +231,11 @@ function visit(textTree)
 					USRs = docfile:usrs_for_function(textTree.children[1])
 				end
 				if #USRs == 0 then
-					textTree:error("Function not found: " .. textTree.children[1])
+					textTree:fatal_error("Function not found: " .. textTree.children[1])
 					return { textTree }
 				end
 				if not (#USRs == 1) then
-					textTree:error(
+					textTree:fatal_error(
 						DocumentedKinds[textTree.kind]
 							.. "name is ambiguous, please provide a USR for '"
 							.. textTree.children[1]
