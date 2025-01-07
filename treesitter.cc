@@ -258,7 +258,7 @@ void register_builder(sol::state &lua, std::string_view name)
 	lua.new_usertype<Builder>(name,
 	                          "new",
 	                          std::make_unique<Builder>,
-	                          "find_code",
+	                          "process_string",
 	                          &Builder::process_string);
 }
 
