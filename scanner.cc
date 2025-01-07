@@ -583,6 +583,14 @@ replace_all(std::string str, const std::string &from, const std::string &to)
 	return str;
 }
 
+/**
+ * State object shared across all passes that can be used to pass
+ * information between passes.  Each Lua pass is run in a clean Lua VM, so
+ * this can store only strings.
+ */
+static std::unordered_map<std::string, std::variant<double, bool, std::string>>
+  config;
+
 class TeXOutputPass : public OutputPass
 {
 	void visitor(const TextTree::Child &node)
@@ -787,6 +795,10 @@ class XHTMLOutputPass : public OutputPass
 
 	TextTreePointer process(TextTreePointer tree) override
 	{
+		if (config.contains("DTD"))
+		{
+			std::visit([&](auto &entry) { out() << entry; }, config["DTD"]);
+		}
 		if (!tree)
 		{
 			return nullptr;
@@ -841,15 +853,6 @@ class LuaPass : public TextPass
 	}
 
 	private:
-	/**
-	 * State object shared across all passes that can be used to pass
-	 * information between passes.  Each pass is run in a clean Lua VM, so this
-	 * can store only strings.
-	 */
-	inline static std::unordered_map<std::string,
-	                                 std::variant<double, bool, std::string>>
-	  config;
-
 	inline static std::vector<std::function<void(sol::state &)>> plugins;
 	sol::state                                                   lua;
 	std::function<TextTreePointer(TextTreePointer)> processFunction;
