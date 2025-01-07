@@ -28,7 +28,8 @@ class TreeSitterTextBuilder
 	std::string                 endMarker;
 	uint32_t                    lastByte;
 	uint32_t                    firstLine;
-	bool                        print = false;
+	bool                        print             = false;
+	bool                        useCommentMarkers = false;
 
 	void dfs(TSTreeCursor *cursor)
 	{
@@ -48,7 +49,8 @@ class TreeSitterTextBuilder
 			// Uncomment when debugging new grammars.
 			// std::cerr << "Kind: " << kind << std::endl;
 			// std::cerr << "Text: " << text << std::endl;
-			if ((kind == "comment_content") || (kind == "comment"))
+			if (useCommentMarkers &&
+			    ((kind == "comment_content") || (kind == "comment")))
 			{
 				if (text.contains(beginMarker))
 				{
@@ -117,13 +119,24 @@ class TreeSitterTextBuilder
 	{
 		ranges.clear();
 		currentSource = source;
-		beginMarker   = commentMarker;
-		beginMarker += "#begin";
-		endMarker = commentMarker;
-		endMarker += "#end";
+		if (commentMarker == "")
+		{
+			beginMarker       = "";
+			endMarker         = "";
+			print             = true;
+			useCommentMarkers = false;
+		}
+		else
+		{
+			beginMarker = commentMarker;
+			beginMarker += "#begin";
+			endMarker = commentMarker;
+			endMarker += "#end";
+			print             = false;
+			useCommentMarkers = true;
+		}
 		lastByte  = 0;
 		firstLine = 0;
-		print     = false;
 
 		TSParser *parser = ts_parser_new();
 		ts_parser_set_language(parser, LanguageTraits::create_language());
