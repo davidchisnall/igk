@@ -333,12 +333,9 @@ class TeXStyleScanner
 		return sourceManager.compress(fileID, stream.line(), stream.index());
 	}
 
-	/**
-	 * Helper that returns a sequence of characters that are all alphanumeric.
-	 */
-	std::string read_word()
+	std::string read_command_name()
 	{
-		while (stream.isalnum())
+		while (!stream.isspace() && (stream.peek() != U'=') && (stream.peek() != U','))
 		{
 			stream.next();
 		}
@@ -369,6 +366,7 @@ class TeXStyleScanner
 			}
 			stream.drop();
 		}
+		std::cerr << std::endl;
 	}
 
 	/**
@@ -384,14 +382,8 @@ class TeXStyleScanner
 			if (c == U'\\')
 			{
 				char32_t next = stream.peek_ahead();
-				// If we see \%, drop the \ and keep the %.
-				if (next == U'%')
-				{
-					stream.drop();
-					continue;
-				}
 				// std::cerr << "Found \\, next is " << (char)next << std::endl;
-				if ((next == U'\\') || (next == U'}'))
+				if ((next == U'%') || (next == U'\\') || (next == U'}'))
 				{
 					text += stream.token();
 					text.push_back(next);
@@ -463,7 +455,7 @@ class TeXStyleScanner
 			{
 				stream.drop_space();
 				SourceLocation argumentStart = current_location();
-				std::string    argumentName  = read_word();
+				std::string    argumentName  = read_command_name();
 				std::string    value;
 				stream.drop_space();
 				if (stream.consume(U'='))
