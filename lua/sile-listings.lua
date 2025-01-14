@@ -109,7 +109,10 @@ function visitClangDoc(textTree)
 	-- Move all of the children of the text tree into the parbox in the
 	-- framebox in the center.
 	center.children[2].children[1]:take_children(textTree)
-	return { center }
+	local parbox = TextTree.new("floating")
+	parbox:attribute_set("width", "100%fw")
+	parbox:append_child(center)
+	return { parbox }
 end
 
 function visitCode(textTree)
@@ -161,10 +164,16 @@ function visitCode(textTree)
 	textTree:attribute_erase("first-line")
 	textTree:attribute_erase("code-kind")
 	textTree:match("code-run", visitCodeRuns)
+
+	-- Prevent page breaks in code:
+	local parbox = TextTree.new("floating")
+	parbox:attribute_set("width", "100%fw")
+	parbox:append_child(textTree)
 	if caption then
-		return { textTree, caption }
+		parbox:append_child(caption)
 	end
-	return { textTree }
+
+	return { parbox }
 end
 
 function process(textTree)
