@@ -5,6 +5,9 @@ function process(textTree)
 	local link = TextTree.new("link")
 	link:attribute_set("rel", "stylesheet")
 	link:attribute_set("href", "book.css")
+	if config.language then
+		html:attribute_set("lang", config.language)
+	end
 	if config.title then
 		local title = head:new_child("title")
 		title:append_text(config.title)

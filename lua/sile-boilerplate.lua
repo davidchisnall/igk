@@ -6,7 +6,6 @@ function process(textTree)
 		use:attribute_set("module", "packages." .. module)
 	end
 	addUse("lists")
-	addUse("verbatim")
 	addUse("color")
 	addUse("labelrefs")
 	addUse("ptable")

@@ -1,6 +1,5 @@
--- TODO: Colour differently for print
 
-local colours = {
+local ebookColours = {
 	Declaration = "#0000FF",
 	Punctuation = "#000000",
 	TypeRef = "#0000FF",
@@ -18,11 +17,37 @@ local colours = {
 	Identifier = "#000000",
 }
 
+local italic = { kind = "font", attributes = { style = "italic" }}
+local bold = { kind = "font", attributes = { weight = "700" }}
+
+-- These are not great print choices, but they're fine to start with
+
+local printNodes = {
+	Declaration = bold,
+	RuleHead = bold,
+	MacroName = bold,
+	MacroInstantiation = bold,
+	Literal = italic,
+	String = italic,
+	Number = italic,
+	Keyword = italic,
+	Comment = italic,
+}
+
 function visitCodeRuns(textTree)
-	textTree.kind = "color"
 	local kind = textTree:has_attribute("token-kind") and textTree:attribute("token-kind") or "Identifier"
-	textTree:attribute_erase("token-kind")
-	textTree:attribute_set("color", colours[kind] or colours.Identifier)
+	if config.print then
+		if printNodes[kind] then
+			local run = TextTree.create(printNodes[kind])
+			run:take_children(textTree)
+			return { run }
+		end
+		return textTree:extract_children()
+	else
+		textTree:attribute_erase("token-kind")
+		textTree.kind = "color"
+		textTree:attribute_set("color", ebookColours[kind] or ebookColours.Identifier)
+	end
 	return { textTree }
 end
 
