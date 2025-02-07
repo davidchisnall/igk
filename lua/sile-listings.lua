@@ -120,17 +120,6 @@ function visitClangDoc(textTree)
 	-- Visit the code block first so that we don't make it small twice.
 	textTree:match("code", visitCode)
 
-	-- Visit each inline code block so that we make it the correct font before
-	-- we make it the correct colour.
-	textTree:match("code-run", function(codeRun)
-		codeRun = visitCodeRuns(codeRun)[1]
-		local code = TextTree.new("font")
-		code:attribute_set("family", "Hack")
-		code:attribute_set("size", "0.8em")
-		code:append_child(codeRun)
-		return { code }
-	end)
-
 	-- Move all of the children of the text tree into the parbox in the
 	-- framebox in the center.
 	center.children[2].children[1]:take_children(textTree)
@@ -204,10 +193,17 @@ end
 function process(textTree)
 	textTree:match("clang-doc", visitClangDoc)
 	textTree:match("code", visitCode)
-	-- Uncomment for debugging
-	--textTree:match("code-run", function(tree)
-		--tree:error("code run should have been removed already")
-		--return {tree}
-	--end)
+
+	-- Visit each inline code block so that we make it the correct font before
+	-- we make it the correct colour.
+	textTree:match("code-run", function(codeRun)
+		codeRun = visitCodeRuns(codeRun)[1]
+		local code = TextTree.new("font")
+		code:attribute_set("family", "Hack")
+		code:attribute_set("size", "0.8em")
+		code:append_child(codeRun)
+		return { code }
+	end)
+
 	return textTree
 end

@@ -219,6 +219,7 @@ struct RegoTraits
 	  "close_bracket",
 	  "open_paren",
 	  "close_paren",
+	  "keyword",
 	  "import",
 	  "number"};
 	static inline const std::unordered_set<std::string> tokenInfoKinds = {
