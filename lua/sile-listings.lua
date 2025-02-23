@@ -167,7 +167,8 @@ function visitCode(textTree)
 		end
 		caption:append_text(textTree:attribute("caption"))
 		if textTree:has_attribute("filename") then
-			local from = caption:new_child("font")
+			caption:append_text(" ")
+			local from = caption:new_child("hbox"):new_child("font")
 			from:attribute_set("size", "0.8em")
 			from:append_text(" [ from: " .. textTree:attribute("filename") .. " ]")
 		end
