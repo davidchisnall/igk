@@ -138,12 +138,21 @@ function visitCode(textTree)
 	if textTree:has_attribute("first-line") then
 		line = textTree:attribute("first-line")
 	end
+	local addLineNumber = function()
+		if line then
+			local lineBox = textTree:new_child("parbox")
+			lineBox:attribute_set("width", "3em")
+			lineBox = lineBox:new_child("raggedleft")
+			lineBox = lineBox:new_child("font")
+			lineBox:attribute_set("size", "0.7em")
+			lineBox:append_text(tostring(line))
+			line = line + 1
+			textTree:append_text(" ")
+		end
+	end
 	while not (linebreak == -1) do
 		local split = code_line:split_at_byte_index(linebreak)
-		if line then
-			textTree:append_text(tostring(line) .. " ")
-			line = line + 1
-		end
+		addLineNumber()
 		textTree:append_child(split[1])
 		textTree:new_child("break")
 		textTree:append_text("\n")
@@ -153,7 +162,7 @@ function visitCode(textTree)
 	textTree:new_child("break")
 	textTree:append_text("\n")
 	if line then
-		textTree:append_text(tostring(line) .. " ")
+		addLineNumber()
 	end
 	textTree:append_child(code_line)
 	textTree:new_child("break")
