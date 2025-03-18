@@ -135,7 +135,9 @@ function cleanMarkdown(textTree)
 			for w in string.gmatch(line, "`([^`]*)`") do
 				-- Find the location of the matched string, treating it as a
 				-- string not a pattern
-				local i, e = string.find(line, w, start, true)
+				local i, e = string.find(line, "`" .. w .. "`", start, true)
+				i = i + 1
+				e = e - 1
 				if i > start + 1 then
 					table.insert(results, string.sub(line, start, i - 2))
 				end
