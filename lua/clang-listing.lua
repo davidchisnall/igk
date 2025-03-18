@@ -132,19 +132,28 @@ function cleanMarkdown(textTree)
 				line = string.sub(line, #listPrefix + 1)
 			end
 			local start = 1
-			for w in string.gmatch(line, "`([^`]*)`") do
+			local markupKinds = { ["*"] = "textem", ["`"] = "code-run" }
+			local pattern = "([`%*])([^`*]*)([`%*])"
+			local first, w, last = string.match(line, pattern, start)
+			while first do
+				if first ~= last then
+					first = first == "*" and "%*" or first
+					fallbackPattern = "([" .. first .. "])([^" .. first .. "]*)(["..first.."])"
+					first, w, last = string.match(line, fallbackPattern, start)
+				end
 				-- Find the location of the matched string, treating it as a
 				-- string not a pattern
-				local i, e = string.find(line, "`" .. w .. "`", start, true)
+				local i, e = string.find(line, first .. w .. last, start, true)
 				i = i + 1
 				e = e - 1
 				if i > start + 1 then
 					table.insert(results, string.sub(line, start, i - 2))
 				end
-				local run = TextTree.new("code-run")
+				local run = TextTree.new(markupKinds[first])
 				run:append_text(w)
 				table.insert(results, run)
 				start = e + 2
+				first, w, last = string.match(line, pattern, start)
 			end
 			if start <= #line then
 				table.insert(results, string.sub(line, start, #line))
