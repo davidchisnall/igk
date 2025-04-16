@@ -452,6 +452,10 @@ namespace
 						addToken(token_kind(tokens[i]),
 						         String{clang_getTokenSpelling(translationUnit,
 						                                       tokens[i])});
+						if (tokenText == ",")
+						{
+							macroTree->append_text(" ");
+						}
 						if (bracketCount == 0)
 						{
 							break;
