@@ -14,7 +14,7 @@ FetchContent_Declare(
     cli11_proj
     QUIET
     GIT_REPOSITORY https://github.com/CLIUtils/CLI11.git
-    GIT_TAG v2.3.2
+    GIT_TAG v2.5.0
 )
 
 FetchContent_Declare(
@@ -37,7 +37,7 @@ FetchContent_MakeAvailable(cli11_proj)
 FetchContent_MakeAvailable(tree_sitter)
 FetchContent_MakeAvailable(tree_sitter_lua)
 
-find_package(Lua REQUIRED)
+find_package(Lua 5.4 REQUIRED EXACT)
 find_package(ICU 74.1 COMPONENTS uc REQUIRED)
 
 find_package(LLVM REQUIRED CONFIG)
