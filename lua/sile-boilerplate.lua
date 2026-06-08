@@ -5,7 +5,6 @@ function process(textTree)
 		local use = document:new_child("use")
 		use:attribute_set("module", "packages." .. module)
 	end
-	addUse("lists")
 	addUse("color")
 	addUse("labelrefs")
 	addUse("ptable")
